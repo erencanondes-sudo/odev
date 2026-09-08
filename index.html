@@ -1,15 +1,17 @@
 <!DOCTYPE html>
+
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Ödev ve Puan Takibi</title>
+<title>Ödev Takip Sistemi</title>
 
 <style>
 :root {
     --primary: #2f6fdd;
     --primary-dark: #2459b0;
+    --danger: #e5484d;
     --bg: #f4f7fb;
     --card: #ffffff;
     --text: #202938;
@@ -30,25 +32,28 @@ body {
     color: var(--text);
 }
 
+button,
+input,
+select {
+    font-family: inherit;
+}
+
 .app {
-    max-width: 900px;
+    max-width: 1000px;
     margin: auto;
     min-height: 100vh;
     padding: 20px;
 }
 
-/* =========================
-   ÜST BAŞLIK
-========================= */
+/* BAŞLIK */
 
 .header {
-    margin-bottom: 25px;
+    margin-bottom: 24px;
 }
 
 .header h1 {
     margin: 0;
     font-size: 28px;
-    font-weight: 700;
 }
 
 .header p {
@@ -57,9 +62,52 @@ body {
     font-size: 15px;
 }
 
-/* =========================
-   SINIF LİSTESİ
-========================= */
+/* BUTONLAR */
+
+.action-area {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 18px;
+}
+
+.primary-btn,
+.danger-btn {
+    border: none;
+    padding: 13px 18px;
+    border-radius: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 6px 15px rgba(47,111,221,0.25);
+}
+
+.primary-btn:hover {
+    background: var(--primary-dark);
+}
+
+.danger-btn {
+    background: #fff0f1;
+    color: var(--danger);
+    border: 1px solid #ffd5d7;
+}
+
+.danger-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.primary-btn:active,
+.danger-btn:active {
+    transform: scale(0.97);
+}
+
+/* SINIF LİSTESİ */
 
 .class-list {
     display: grid;
@@ -129,9 +177,34 @@ body {
     font-size: 22px;
 }
 
-/* =========================
-   SINIF DETAY SAYFASI
-========================= */
+/* BOŞ DURUM */
+
+.empty-state {
+    background: white;
+    border: 1px dashed #cfd8e6;
+    border-radius: 20px;
+    padding: 45px 20px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.empty-state .empty-icon {
+    font-size: 45px;
+    margin-bottom: 12px;
+}
+
+.empty-state h3 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 18px;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* SINIF SAYFASI */
 
 .class-page {
     display: none;
@@ -141,7 +214,7 @@ body {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 .back-btn {
@@ -170,35 +243,17 @@ body {
     font-size: 14px;
 }
 
-/* =========================
-   YENİ PUAN BUTONU
-========================= */
+/* SINIF BUTONLARI */
 
-.action-area {
+.class-actions {
     display: flex;
+    gap: 10px;
     justify-content: flex-end;
     margin-bottom: 18px;
+    flex-wrap: wrap;
 }
 
-.add-score-btn {
-    border: none;
-    background: var(--primary);
-    color: white;
-    padding: 13px 18px;
-    border-radius: 13px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 6px 15px rgba(47,111,221,0.25);
-}
-
-.add-score-btn:active {
-    transform: scale(0.97);
-}
-
-/* =========================
-   TABLO
-========================= */
+/* TABLO */
 
 .table-card {
     background: white;
@@ -211,12 +266,13 @@ body {
 .table-scroll {
     overflow-x: auto;
     width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 650px;
+    min-width: 500px;
 }
 
 thead {
@@ -255,10 +311,10 @@ tbody tr:hover {
     font-weight: 600;
 }
 
-/* PUAN GİRİŞİ */
+/* PUAN SEÇİMİ */
 
-.score-input {
-    width: 65px;
+.score-select {
+    width: 68px;
     height: 40px;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -266,17 +322,25 @@ tbody tr:hover {
     font-size: 15px;
     outline: none;
     background: #fafbfd;
+    cursor: pointer;
+    appearance: auto;
 }
 
-.score-input:focus {
+.score-select:focus {
     border-color: var(--primary);
     background: white;
     box-shadow: 0 0 0 3px rgba(47,111,221,0.1);
 }
 
-/* =========================
-   MODAL
-========================= */
+/* SONUÇ */
+
+.result-cell {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 16px;
+}
+
+/* MODAL */
 
 .modal-overlay {
     display: none;
@@ -291,7 +355,7 @@ tbody tr:hover {
 
 .modal {
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
     background: white;
     border-radius: 22px;
     padding: 25px;
@@ -299,6 +363,7 @@ tbody tr:hover {
 }
 
 @keyframes modalOpen {
+
     from {
         opacity: 0;
         transform: scale(0.95);
@@ -308,6 +373,7 @@ tbody tr:hover {
         opacity: 1;
         transform: scale(1);
     }
+
 }
 
 .modal h2 {
@@ -321,6 +387,10 @@ tbody tr:hover {
     margin-bottom: 20px;
 }
 
+.form-group {
+    margin-bottom: 15px;
+}
+
 .modal label {
     display: block;
     font-size: 14px;
@@ -328,7 +398,8 @@ tbody tr:hover {
     font-weight: 600;
 }
 
-.modal input {
+.modal input,
+.modal select {
     width: 100%;
     height: 48px;
     border: 1px solid var(--border);
@@ -336,9 +407,11 @@ tbody tr:hover {
     padding: 0 14px;
     font-size: 16px;
     outline: none;
+    background: white;
 }
 
-.modal input:focus {
+.modal input:focus,
+.modal select:focus {
     border-color: var(--primary);
 }
 
@@ -369,9 +442,13 @@ tbody tr:hover {
     color: white;
 }
 
-/* =========================
-   MOBİL
-========================= */
+.delete-confirm-btn {
+    background: var(--danger);
+    border: none;
+    color: white;
+}
+
+/* MOBİL */
 
 @media (max-width: 600px) {
 
@@ -397,259 +474,516 @@ tbody tr:hover {
         justify-content: stretch;
     }
 
-    .add-score-btn {
+    .action-area .primary-btn {
         width: 100%;
     }
 
+    .class-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .class-actions button {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+
+    .table-card {
+        border-radius: 14px;
+    }
+
 }
+
 </style>
+
 </head>
 
 <body>
 
 <div class="app">
 
-    <!-- =====================
-         SINIF LİSTESİ
-    ====================== -->
+```
+<!-- SINIF LİSTESİ -->
 
-    <div id="classListPage">
+<div id="classListPage">
 
-        <div class="header">
-            <h1>Sınıflarım</h1>
-            <p>Puan girmek istediğiniz sınıfı seçin.</p>
-        </div>
+    <div class="header">
+        <h1>Sınıflarım</h1>
+        <p>Ödev ve öğrenci takibi için sınıf oluşturun.</p>
+    </div>
 
-        <div class="class-list" id="classList">
+    <div class="action-area">
 
-            <!-- JavaScript ile oluşacak -->
-
-        </div>
+        <button
+            class="primary-btn"
+            onclick="openClassModal()"
+        >
+            + Sınıf Ekle
+        </button>
 
     </div>
 
+    <div
+        class="class-list"
+        id="classList"
+    ></div>
 
-    <!-- =====================
-         SINIF DETAY
-    ====================== -->
-
-    <div class="class-page" id="classPage">
-
-        <div class="top-bar">
-
-            <button class="back-btn" onclick="goBack()">
-                ←
-            </button>
-
-            <div class="class-title">
-                <h1 id="selectedClassName">5/A</h1>
-                <p id="studentCount">0 Öğrenci</p>
-            </div>
-
-        </div>
-
-
-        <div class="action-area">
-
-            <button class="add-score-btn" onclick="openModal()">
-                + Yeni Puan
-            </button>
-
-        </div>
-
-
-        <div class="table-card">
-
-            <div class="table-scroll">
-
-                <table>
-
-                    <thead>
-
-                        <tr id="tableHead">
-
-                            <th>Okul No</th>
-                            <th>Ad Soyad</th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="studentTable">
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
+    <div
+        class="empty-state"
+        id="emptyClassState"
+    >
+        <div class="empty-icon">🏫</div>
+        <h3>Henüz sınıf eklenmedi</h3>
+        <p>Başlamak için yeni bir sınıf oluşturun.</p>
     </div>
 
 </div>
 
 
-<!-- =====================
-     YENİ PUAN MODALI
-===================== -->
+<!-- SINIF DETAY SAYFASI -->
 
-<div class="modal-overlay" id="modal">
+<div
+    class="class-page"
+    id="classPage"
+>
 
-    <div class="modal">
+    <div class="top-bar">
 
-        <h2>Yeni Puan Bölümü</h2>
+        <button
+            class="back-btn"
+            onclick="goBack()"
+        >
+            ←
+        </button>
+
+        <div class="class-title">
+
+            <h1 id="selectedClassName">
+                Sınıf
+            </h1>
+
+            <p id="studentCount">
+                0 Öğrenci
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- BUTONLAR -->
+
+    <div class="class-actions">
+
+        <button
+            class="primary-btn"
+            onclick="openStudentModal()"
+        >
+            + Öğrenci Ekle
+        </button>
+
+        <button
+            class="danger-btn"
+            onclick="openDeleteStudentModal()"
+        >
+            🗑 Öğrenci Sil
+        </button>
+
+        <button
+            class="primary-btn"
+            onclick="openHomeworkModal()"
+        >
+            + Ödev Ekle
+        </button>
+
+        <button
+            class="danger-btn"
+            onclick="openDeleteHomeworkModal()"
+        >
+            🗑 Ödev Sil
+        </button>
+
+    </div>
+
+
+    <!-- TABLO -->
+
+    <div class="table-card">
+
+        <div class="table-scroll">
+
+            <table>
+
+                <thead>
+
+                    <tr id="tableHead">
+                        <th>Okul No</th>
+                        <th>Ad Soyad</th>
+                        <th>Sonuç</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="studentTable">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="empty-state"
+        id="emptyStudentState"
+        style="display:none; margin-top:20px;"
+    >
+
+        <div class="empty-icon">👨‍🎓</div>
+
+        <h3>Henüz öğrenci eklenmedi</h3>
 
         <p>
-            Oluşturacağınız puan bölümü tüm öğrencilere eklenecek.
+            Bu sınıfa öğrenci ekleyerek başlayın.
         </p>
 
-        <label>Puan Bölümü Adı</label>
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- SINIF EKLE MODALI -->
+
+<div
+    class="modal-overlay"
+    id="classModal"
+>
+
+```
+<div class="modal">
+
+    <h2>Yeni Sınıf</h2>
+
+    <p>
+        Oluşturmak istediğiniz sınıfın adını girin.
+    </p>
+
+    <div class="form-group">
+
+        <label>Sınıf Adı</label>
 
         <input
             type="text"
-            id="scoreName"
-            placeholder="Örn: Etkinlik 1"
+            id="classNameInput"
+            placeholder="Örn: 5/A"
         >
 
-        <div class="modal-buttons">
+    </div>
 
-            <button class="cancel-btn" onclick="closeModal()">
-                İptal
-            </button>
+    <div class="modal-buttons">
 
-            <button class="save-btn" onclick="addScoreColumn()">
-                Ekle
-            </button>
+        <button
+            class="cancel-btn"
+            onclick="closeModal('classModal')"
+        >
+            İptal
+        </button>
 
-        </div>
+        <button
+            class="save-btn"
+            onclick="addClass()"
+        >
+            Ekle
+        </button>
 
     </div>
 
 </div>
+```
 
+</div>
+
+<!-- ÖĞRENCİ EKLE MODALI -->
+
+<div
+    class="modal-overlay"
+    id="studentModal"
+>
+
+```
+<div class="modal">
+
+    <h2>Öğrenci Ekle</h2>
+
+    <p>
+        Öğrencinin bilgilerini girin.
+    </p>
+
+    <div class="form-group">
+
+        <label>Okul Numarası</label>
+
+        <input
+            type="text"
+            id="studentNoInput"
+            placeholder="Örn: 1784"
+        >
+
+    </div>
+
+    <div class="form-group">
+
+        <label>Ad Soyad</label>
+
+        <input
+            type="text"
+            id="studentNameInput"
+            placeholder="Örn: Eren Can"
+        >
+
+    </div>
+
+    <div class="modal-buttons">
+
+        <button
+            class="cancel-btn"
+            onclick="closeModal('studentModal')"
+        >
+            İptal
+        </button>
+
+        <button
+            class="save-btn"
+            onclick="addStudent()"
+        >
+            Ekle
+        </button>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- ÖDEV EKLE MODALI -->
+
+<div
+    class="modal-overlay"
+    id="homeworkModal"
+>
+
+```
+<div class="modal">
+
+    <h2>Yeni Ödev</h2>
+
+    <p>
+        Oluşturacağınız ödev tüm öğrencilere eklenecek.
+    </p>
+
+    <div class="form-group">
+
+        <label>Ödev Adı</label>
+
+        <input
+            type="text"
+            id="homeworkNameInput"
+            placeholder="Ödev 1"
+        >
+
+    </div>
+
+    <div class="modal-buttons">
+
+        <button
+            class="cancel-btn"
+            onclick="closeModal('homeworkModal')"
+        >
+            İptal
+        </button>
+
+        <button
+            class="save-btn"
+            onclick="addHomework()"
+        >
+            Ekle
+        </button>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- ÖĞRENCİ SİL MODALI -->
+
+<div
+    class="modal-overlay"
+    id="deleteStudentModal"
+>
+
+```
+<div class="modal">
+
+    <h2>Öğrenci Sil</h2>
+
+    <p>
+        Silmek istediğiniz öğrenciyi seçin.
+    </p>
+
+    <div class="form-group">
+
+        <label>Öğrenci</label>
+
+        <select id="deleteStudentSelect">
+        </select>
+
+    </div>
+
+    <div class="modal-buttons">
+
+        <button
+            class="cancel-btn"
+            onclick="closeModal('deleteStudentModal')"
+        >
+            İptal
+        </button>
+
+        <button
+            class="delete-confirm-btn"
+            onclick="deleteStudent()"
+        >
+            Sil
+        </button>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- ÖDEV SİL MODALI -->
+
+<div
+    class="modal-overlay"
+    id="deleteHomeworkModal"
+>
+
+```
+<div class="modal">
+
+    <h2>Ödev Sil</h2>
+
+    <p>
+        Silmek istediğiniz ödevi seçin.
+    </p>
+
+    <div class="form-group">
+
+        <label>Ödev</label>
+
+        <select id="deleteHomeworkSelect">
+        </select>
+
+    </div>
+
+    <div class="modal-buttons">
+
+        <button
+            class="cancel-btn"
+            onclick="closeModal('deleteHomeworkModal')"
+        >
+            İptal
+        </button>
+
+        <button
+            class="delete-confirm-btn"
+            onclick="deleteHomework()"
+        >
+            Sil
+        </button>
+
+    </div>
+
+</div>
+```
+
+</div>
 
 <script>
 
-/* ==================================
-   SINIF VERİLERİ
-================================== */
+/* ==========================================
+   VERİLER
+========================================== */
 
-const classes = [
-
-    {
-        id: 1,
-        name: "5/A",
-
-        students: [
-
-            {
-                no: "1420",
-                name: "Eren Can"
-            },
-
-            {
-                no: "1421",
-                name: "Ahmet Yılmaz"
-            },
-
-            {
-                no: "1422",
-                name: "Ayşe Demir"
-            },
-
-            {
-                no: "1423",
-                name: "Mehmet Kaya"
-            }
-
-        ],
-
-        scoreColumns: [
-            "Puan 1",
-            "Puan 2"
-        ]
-
-    },
-
-
-    {
-        id: 2,
-        name: "5/B",
-
-        students: [
-
-            {
-                no: "1501",
-                name: "Ali Kaya"
-            },
-
-            {
-                no: "1502",
-                name: "Zeynep Demir"
-            },
-
-            {
-                no: "1503",
-                name: "Can Yılmaz"
-            }
-
-        ],
-
-        scoreColumns: []
-
-    },
-
-
-    {
-        id: 3,
-        name: "6/A",
-
-        students: [
-
-            {
-                no: "1601",
-                name: "Fatma Can"
-            },
-
-            {
-                no: "1602",
-                name: "Burak Yıldız"
-            }
-
-        ],
-
-        scoreColumns: []
-
-    }
-
-];
-
-
-/* ==================================
-   SEÇİLİ SINIF
-================================== */
+const classes = [];
 
 let selectedClass = null;
 
 
-/* ==================================
-   SINIF KARTLARINI OLUŞTUR
-================================== */
+/* ==========================================
+   MODAL
+========================================== */
+
+function openModal(id) {
+
+    document
+        .getElementById(id)
+        .style.display = "flex";
+
+}
+
+
+function closeModal(id) {
+
+    document
+        .getElementById(id)
+        .style.display = "none";
+
+}
+
+
+/* ==========================================
+   SINIF LİSTESİ
+========================================== */
 
 function renderClassList() {
 
-    const classList = document.getElementById("classList");
+    const classList =
+        document.getElementById("classList");
+
+    const emptyState =
+        document.getElementById("emptyClassState");
+
 
     classList.innerHTML = "";
 
 
+    if (classes.length === 0) {
+
+        emptyState.style.display = "block";
+
+        return;
+
+    }
+
+
+    emptyState.style.display = "none";
+
+
     classes.forEach(classItem => {
 
-        const card = document.createElement("div");
+        const card =
+            document.createElement("div");
 
-        card.className = "class-card";
+        card.className =
+            "class-card";
 
 
         card.innerHTML = `
@@ -665,13 +999,13 @@ function renderClassList() {
                     <h2>${classItem.name}</h2>
 
                     <span>
-                        ${classItem.students.length} Öğrenci
+                        ${classItem.students.length}
+                        Öğrenci
                     </span>
 
                 </div>
 
             </div>
-
 
             <div class="arrow">
                 ›
@@ -680,11 +1014,8 @@ function renderClassList() {
         `;
 
 
-        card.onclick = () => {
-
+        card.onclick = () =>
             openClass(classItem.id);
-
-        };
 
 
         classList.appendChild(card);
@@ -694,28 +1025,122 @@ function renderClassList() {
 }
 
 
-/* ==================================
+/* ==========================================
+   SINIF EKLE
+========================================== */
+
+function openClassModal() {
+
+    const input =
+        document.getElementById(
+            "classNameInput"
+        );
+
+
+    input.value = "";
+
+
+    openModal("classModal");
+
+
+    setTimeout(() => {
+
+        input.focus();
+
+    }, 100);
+
+}
+
+
+function addClass() {
+
+    const name =
+        document
+            .getElementById(
+                "classNameInput"
+            )
+            .value
+            .trim();
+
+
+    if (!name) {
+
+        alert(
+            "Lütfen sınıf adı girin."
+        );
+
+        return;
+
+    }
+
+
+    const exists =
+        classes.some(
+            item =>
+                item.name.toLowerCase() ===
+                name.toLowerCase()
+        );
+
+
+    if (exists) {
+
+        alert(
+            "Bu sınıf zaten mevcut."
+        );
+
+        return;
+
+    }
+
+
+    classes.push({
+
+        id: Date.now(),
+
+        name: name,
+
+        students: [],
+
+        homeworkColumns: []
+
+    });
+
+
+    closeModal("classModal");
+
+
+    renderClassList();
+
+}
+
+
+/* ==========================================
    SINIF AÇ
-================================== */
+========================================== */
 
-function openClass(classId) {
+function openClass(id) {
 
-    selectedClass = classes.find(
-        item => item.id === classId
-    );
-
-
-    document.getElementById("classListPage").style.display = "none";
-
-    document.getElementById("classPage").style.display = "block";
+    selectedClass =
+        classes.find(
+            item =>
+                item.id === id
+        );
 
 
-    document.getElementById("selectedClassName").textContent =
-        selectedClass.name;
+    document
+        .getElementById("classListPage")
+        .style.display = "none";
 
 
-    document.getElementById("studentCount").textContent =
-        selectedClass.students.length + " Öğrenci";
+    document
+        .getElementById("classPage")
+        .style.display = "block";
+
+
+    document
+        .getElementById("selectedClassName")
+        .textContent =
+            selectedClass.name;
 
 
     renderTable();
@@ -723,21 +1148,102 @@ function openClass(classId) {
 }
 
 
-/* ==================================
-   TABLOYU OLUŞTUR
-================================== */
+/* ==========================================
+   SONUÇ HESAPLAMA
+========================================== */
+
+function calculateResult(student) {
+
+    const scores = [];
+
+
+    selectedClass
+        .homeworkColumns
+        .forEach(homework => {
+
+            const value =
+                student.scores[homework];
+
+
+            if (
+                value !== "" &&
+                value !== undefined &&
+                value !== null
+            ) {
+
+                scores.push(
+                    Number(value)
+                );
+
+            }
+
+        });
+
+
+    if (
+        scores.length === 0
+    ) {
+
+        return "-";
+
+    }
+
+
+    const total =
+        scores.reduce(
+            (sum, score) =>
+                sum + score,
+            0
+        );
+
+
+    const average =
+        total /
+        scores.length;
+
+
+    return Number(
+        (average * 10)
+            .toFixed(1)
+    );
+
+}
+
+
+/* ==========================================
+   TABLOYU GÖSTER
+========================================== */
 
 function renderTable() {
 
     const tableHead =
-        document.getElementById("tableHead");
+        document.getElementById(
+            "tableHead"
+        );
 
 
     const studentTable =
-        document.getElementById("studentTable");
+        document.getElementById(
+            "studentTable"
+        );
 
 
-    /* TABLO BAŞLIĞINI SIFIRLA */
+    const emptyState =
+        document.getElementById(
+            "emptyStudentState"
+        );
+
+
+    document
+        .getElementById(
+            "studentCount"
+        )
+        .textContent =
+            selectedClass.students.length +
+            " Öğrenci";
+
+
+    /* TABLO BAŞLIĞI */
 
     tableHead.innerHTML = `
 
@@ -748,187 +1254,455 @@ function renderTable() {
     `;
 
 
-    /* PUAN SÜTUNLARINI EKLE */
+    /* ÖDEV BAŞLIKLARI */
 
-    selectedClass.scoreColumns.forEach(score => {
+    selectedClass
+        .homeworkColumns
+        .forEach(homework => {
 
-        const th = document.createElement("th");
+            const th =
+                document.createElement("th");
 
-        th.textContent = score;
+            th.textContent =
+                homework;
 
-        tableHead.appendChild(th);
-
-    });
-
-
-    /* ÖĞRENCİ LİSTESİNİ TEMİZLE */
-
-    studentTable.innerHTML = "";
-
-
-    /* ÖĞRENCİLERİ OLUŞTUR */
-
-    selectedClass.students.forEach(student => {
-
-        const row =
-            document.createElement("tr");
-
-
-        /* OKUL NO */
-
-        const noCell =
-            document.createElement("td");
-
-        noCell.className =
-            "student-no";
-
-        noCell.textContent =
-            student.no;
-
-
-        /* AD SOYAD */
-
-        const nameCell =
-            document.createElement("td");
-
-        nameCell.className =
-            "student-name";
-
-        nameCell.textContent =
-            student.name;
-
-
-        row.appendChild(noCell);
-
-        row.appendChild(nameCell);
-
-
-        /* PUAN ALANLARI */
-
-        selectedClass.scoreColumns.forEach((score, index) => {
-
-            const scoreCell =
-                document.createElement("td");
-
-
-            const input =
-                document.createElement("input");
-
-
-            input.type = "number";
-
-            input.min = "0";
-
-            input.max = "100";
-
-            input.placeholder = "-";
-
-            input.className =
-                "score-input";
-
-
-            scoreCell.appendChild(input);
-
-            row.appendChild(scoreCell);
+            tableHead.appendChild(th);
 
         });
 
 
-        studentTable.appendChild(row);
+    /* SONUÇ */
 
-    });
+    const resultHead =
+        document.createElement("th");
+
+    resultHead.textContent =
+        "Sonuç";
+
+
+    tableHead.appendChild(
+        resultHead
+    );
+
+
+    studentTable.innerHTML = "";
+
+
+    /* ÖĞRENCİ YOK */
+
+    if (
+        selectedClass.students.length === 0
+    ) {
+
+        emptyState.style.display =
+            "block";
+
+        return;
+
+    }
+
+
+    emptyState.style.display =
+        "none";
+
+
+    /* ÖĞRENCİLER */
+
+    selectedClass
+        .students
+        .forEach(student => {
+
+
+            const row =
+                document.createElement("tr");
+
+
+            /* OKUL NO */
+
+            const noCell =
+                document.createElement("td");
+
+            noCell.className =
+                "student-no";
+
+            noCell.textContent =
+                student.no;
+
+
+            row.appendChild(noCell);
+
+
+            /* AD SOYAD */
+
+            const nameCell =
+                document.createElement("td");
+
+            nameCell.className =
+                "student-name";
+
+            nameCell.textContent =
+                student.name;
+
+
+            row.appendChild(nameCell);
+
+
+            /* ÖDEV PUANLARI */
+
+            selectedClass
+                .homeworkColumns
+                .forEach(homework => {
+
+
+                    const scoreCell =
+                        document.createElement("td");
+
+
+                    /* SELECT OLUŞTUR */
+
+                    const select =
+                        document.createElement(
+                            "select"
+                        );
+
+
+                    select.className =
+                        "score-select";
+
+
+                    /* BOŞ SEÇENEK */
+
+                    const emptyOption =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    emptyOption.value = "";
+
+                    emptyOption.textContent =
+                        "-";
+
+
+                    select.appendChild(
+                        emptyOption
+                    );
+
+
+                    /* 0'DAN 10'A KADAR */
+
+                    for (
+                        let score = 0;
+                        score <= 10;
+                        score++
+                    ) {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        option.value =
+                            score;
+
+
+                        option.textContent =
+                            score;
+
+
+                        /* MEVCUT PUANI SEÇ */
+
+                        if (
+                            String(
+                                student.scores[
+                                    homework
+                                ]
+                            ) ===
+                            String(score)
+                        ) {
+
+                            option.selected =
+                                true;
+
+                        }
+
+
+                        select.appendChild(
+                            option
+                        );
+
+                    }
+
+
+                    /* PUAN DEĞİŞİNCE */
+
+                    select.addEventListener(
+                        "change",
+                        function() {
+
+
+                            student.scores[
+                                homework
+                            ] =
+                                this.value;
+
+
+                            /* SONUCU ANINDA HESAPLA */
+
+                            resultCell.textContent =
+                                calculateResult(
+                                    student
+                                );
+
+                        }
+                    );
+
+
+                    scoreCell.appendChild(
+                        select
+                    );
+
+
+                    row.appendChild(
+                        scoreCell
+                    );
+
+                });
+
+
+            /* SONUÇ */
+
+            const resultCell =
+                document.createElement(
+                    "td"
+                );
+
+
+            resultCell.className =
+                "result-cell";
+
+
+            resultCell.textContent =
+                calculateResult(
+                    student
+                );
+
+
+            row.appendChild(
+                resultCell
+            );
+
+
+            studentTable.appendChild(
+                row
+            );
+
+        });
 
 }
 
 
-/* ==================================
-   GERİ DÖN
-================================== */
+/* ==========================================
+   ÖĞRENCİ EKLE
+========================================== */
 
-function goBack() {
+function openStudentModal() {
 
-    document.getElementById("classPage").style.display = "none";
+    document
+        .getElementById(
+            "studentNoInput"
+        )
+        .value = "";
 
-    document.getElementById("classListPage").style.display = "block";
+
+    document
+        .getElementById(
+            "studentNameInput"
+        )
+        .value = "";
 
 
-    selectedClass = null;
+    openModal(
+        "studentModal"
+    );
 
 }
 
 
-/* ==================================
-   MODAL AÇ
-================================== */
+function addStudent() {
 
-function openModal() {
+    const no =
+        document
+            .getElementById(
+                "studentNoInput"
+            )
+            .value
+            .trim();
 
-    document.getElementById("modal").style.display =
-        "flex";
+
+    const name =
+        document
+            .getElementById(
+                "studentNameInput"
+            )
+            .value
+            .trim();
 
 
-    document.getElementById("scoreName").value =
-        "";
+    if (!no) {
+
+        alert(
+            "Lütfen okul numarası girin."
+        );
+
+        return;
+
+    }
+
+
+    if (!name) {
+
+        alert(
+            "Lütfen öğrencinin adını girin."
+        );
+
+        return;
+
+    }
+
+
+    const exists =
+        selectedClass
+            .students
+            .some(
+                student =>
+                    student.no === no
+            );
+
+
+    if (exists) {
+
+        alert(
+            "Bu okul numarası zaten kayıtlı."
+        );
+
+        return;
+
+    }
+
+
+    const student = {
+
+        id:
+            Date.now() +
+            Math.random(),
+
+        no:
+            no,
+
+        name:
+            name,
+
+        scores:
+            {}
+
+    };
+
+
+    selectedClass
+        .homeworkColumns
+        .forEach(homework => {
+
+            student.scores[
+                homework
+            ] = "";
+
+        });
+
+
+    selectedClass
+        .students
+        .push(student);
+
+
+    closeModal(
+        "studentModal"
+    );
+
+
+    renderTable();
+
+}
+
+
+/* ==========================================
+   ÖDEV EKLE
+========================================== */
+
+function openHomeworkModal() {
+
+    const input =
+        document.getElementById(
+            "homeworkNameInput"
+        );
+
+
+    input.value =
+        "Ödev " +
+        (
+            selectedClass
+                .homeworkColumns
+                .length + 1
+        );
+
+
+    openModal(
+        "homeworkModal"
+    );
 
 
     setTimeout(() => {
 
-        document.getElementById("scoreName").focus();
+        input.focus();
+
+        input.select();
 
     }, 100);
 
 }
 
 
-/* ==================================
-   MODAL KAPAT
-================================== */
+function addHomework() {
 
-function closeModal() {
-
-    document.getElementById("modal").style.display =
-        "none";
-
-}
-
-
-/* ==================================
-   YENİ PUAN EKLE
-================================== */
-
-function addScoreColumn() {
-
-    const input =
-        document.getElementById("scoreName");
+    const name =
+        document
+            .getElementById(
+                "homeworkNameInput"
+            )
+            .value
+            .trim();
 
 
-    const scoreName =
-        input.value.trim();
-
-
-    /* İSİM YOKSA */
-
-    if (scoreName === "") {
+    if (!name) {
 
         alert(
-            "Lütfen puan bölümüne bir isim girin."
+            "Lütfen ödev adı girin."
         );
-
-        input.focus();
 
         return;
 
     }
 
 
-    /* AYNI İSİM VAR MI */
-
     if (
-        selectedClass.scoreColumns.includes(scoreName)
+        selectedClass
+            .homeworkColumns
+            .includes(name)
     ) {
 
         alert(
-            "Bu isimde bir puan bölümü zaten bulunuyor."
+            "Bu ödev zaten mevcut."
         );
 
         return;
@@ -936,66 +1710,424 @@ function addScoreColumn() {
     }
 
 
-    /* PUAN SÜTUNUNU EKLE */
+    selectedClass
+        .homeworkColumns
+        .push(name);
 
-    selectedClass.scoreColumns.push(
-        scoreName
+
+    /* TÜM ÖĞRENCİLERE EKLE */
+
+    selectedClass
+        .students
+        .forEach(student => {
+
+            student.scores[
+                name
+            ] = "";
+
+        });
+
+
+    closeModal(
+        "homeworkModal"
     );
 
 
-    /* TABLOYU YENİLE */
-
     renderTable();
-
-
-    /* MODALI KAPAT */
-
-    closeModal();
 
 }
 
 
-/* ==================================
+/* ==========================================
+   ÖĞRENCİ SİL MODALI
+========================================== */
+
+function openDeleteStudentModal() {
+
+    if (
+        selectedClass.students.length === 0
+    ) {
+
+        alert(
+            "Silinecek öğrenci bulunmuyor."
+        );
+
+        return;
+
+    }
+
+
+    const select =
+        document.getElementById(
+            "deleteStudentSelect"
+        );
+
+
+    select.innerHTML = "";
+
+
+    selectedClass
+        .students
+        .forEach(student => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                student.id;
+
+
+            option.textContent =
+                student.no +
+                " - " +
+                student.name;
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+    openModal(
+        "deleteStudentModal"
+    );
+
+}
+
+
+/* ==========================================
+   ÖĞRENCİ SİL
+========================================== */
+
+function deleteStudent() {
+
+    const id =
+        document
+            .getElementById(
+                "deleteStudentSelect"
+            )
+            .value;
+
+
+    const student =
+        selectedClass
+            .students
+            .find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+    if (!student) {
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            student.name +
+            " adlı öğrenciyi silmek istediğinize emin misiniz?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    selectedClass.students =
+        selectedClass
+            .students
+            .filter(
+                item =>
+                    String(item.id) !==
+                    String(id)
+            );
+
+
+    closeModal(
+        "deleteStudentModal"
+    );
+
+
+    renderTable();
+
+}
+
+
+/* ==========================================
+   ÖDEV SİL MODALI
+========================================== */
+
+function openDeleteHomeworkModal() {
+
+    if (
+        selectedClass
+            .homeworkColumns
+            .length === 0
+    ) {
+
+        alert(
+            "Silinecek ödev bulunmuyor."
+        );
+
+        return;
+
+    }
+
+
+    const select =
+        document.getElementById(
+            "deleteHomeworkSelect"
+        );
+
+
+    select.innerHTML = "";
+
+
+    selectedClass
+        .homeworkColumns
+        .forEach(homework => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                homework;
+
+
+            option.textContent =
+                homework;
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+    openModal(
+        "deleteHomeworkModal"
+    );
+
+}
+
+
+/* ==========================================
+   ÖDEV SİL
+========================================== */
+
+function deleteHomework() {
+
+    const homework =
+        document
+            .getElementById(
+                "deleteHomeworkSelect"
+            )
+            .value;
+
+
+    const confirmed =
+        confirm(
+            homework +
+            " silinsin mi?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    /* ÖDEVİ KALDIR */
+
+    selectedClass.homeworkColumns =
+        selectedClass
+            .homeworkColumns
+            .filter(
+                item =>
+                    item !== homework
+            );
+
+
+    /* TÜM ÖĞRENCİLERDEN PUANI SİL */
+
+    selectedClass
+        .students
+        .forEach(student => {
+
+            delete student.scores[
+                homework
+            ];
+
+        });
+
+
+    closeModal(
+        "deleteHomeworkModal"
+    );
+
+
+    renderTable();
+
+}
+
+
+/* ==========================================
+   GERİ DÖN
+========================================== */
+
+function goBack() {
+
+    document
+        .getElementById(
+            "classPage"
+        )
+        .style.display =
+            "none";
+
+
+    document
+        .getElementById(
+            "classListPage"
+        )
+        .style.display =
+            "block";
+
+
+    selectedClass =
+        null;
+
+
+    renderClassList();
+
+}
+
+
+/* ==========================================
    MODAL DIŞINA TIKLAYINCA KAPAT
-================================== */
+========================================== */
 
-document
-.getElementById("modal")
-.addEventListener("click", function(event) {
+const modalIds = [
 
-    if (
-        event.target === this
-    ) {
+    "classModal",
 
-        closeModal();
+    "studentModal",
 
-    }
+    "homeworkModal",
+
+    "deleteStudentModal",
+
+    "deleteHomeworkModal"
+
+];
+
+
+modalIds.forEach(id => {
+
+    document
+        .getElementById(id)
+        .addEventListener(
+            "click",
+            function(event) {
+
+                if (
+                    event.target === this
+                ) {
+
+                    closeModal(id);
+
+                }
+
+            }
+        );
 
 });
 
 
-/* ==================================
-   ENTER İLE EKLE
-================================== */
+/* ==========================================
+   ENTER TUŞU
+========================================== */
 
 document
-.getElementById("scoreName")
-.addEventListener("keydown", function(event) {
+    .getElementById(
+        "classNameInput"
+    )
+    .addEventListener(
+        "keydown",
+        function(event) {
 
-    if (
-        event.key === "Enter"
-    ) {
+            if (
+                event.key === "Enter"
+            ) {
 
-        addScoreColumn();
+                addClass();
 
-    }
+            }
 
-});
+        }
+    );
 
 
-/* ==================================
+document
+    .getElementById(
+        "studentNameInput"
+    )
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                addStudent();
+
+            }
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "homeworkNameInput"
+    )
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                addHomework();
+
+            }
+
+        }
+    );
+
+
+/* ==========================================
    BAŞLAT
-================================== */
+========================================== */
 
 renderClassList();
 
