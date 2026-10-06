@@ -277,7 +277,46 @@ const map = new maplibregl.Map({
     container: 'map',
     center: [26.4144, 40.1467],
     zoom: 14,
-    doubleClickZoom: true
+    doubleClickZoom: true,
+    attributionControl: false
+});
+
+/*
+ * Kaynak bilgisi (OpenFreeMap / OpenStreetMap) küçük
+ * bir "i" düğmesi olarak gösterilir. Tamamen kaldırma:
+ * OpenStreetMap verisinin lisansı kaynak gösterilmesini
+ * zorunlu kılıyor.
+ */
+map.addControl(
+    new maplibregl.AttributionControl({ compact: true }),
+    'bottom-right'
+);
+
+/*
+ * OpenStreetMap kaynak gösterme kuralı: yazı açılışta
+ * görünür olmalı; harita kaydırılınca veya 5 saniye
+ * sonra "i" düğmesine küçülebilir.
+ *
+ * MapLibre haritayı kaydırınca kendisi küçültür.
+ * Burada ek olarak 5 saniye sonra küçültüyoruz.
+ */
+const ATTRIBUTION_VISIBLE_MS = 5000;
+
+function collapseAttribution() {
+
+    const el = map.getContainer().querySelector(
+        '.maplibregl-ctrl-attrib'
+    );
+
+    if (!el || !el.classList.contains('maplibregl-compact'))
+        return;
+
+    el.removeAttribute('open');
+    el.classList.remove('maplibregl-compact-show');
+}
+
+map.once('load', () => {
+    setTimeout(collapseAttribution, ATTRIBUTION_VISIBLE_MS);
 });
 
 
