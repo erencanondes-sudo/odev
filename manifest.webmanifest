@@ -3,8 +3,6 @@
   "short_name": "İnşaat",
   "description": "Türkiye'deki inşaatların haritası",
   "lang": "tr",
-  "start_url": "harita_konumlu.html",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
