@@ -3860,6 +3860,13 @@ function renderHomeList() {
 
     if (!items.length) {
 
+        /*
+         * Kayıtlar henüz gelmediyse hiçbir şey yazma; yoksa
+         * açılışta kısa bir an "Henüz inşaat eklenmemiş" görünür.
+         */
+        if (!firstSnapshotDone)
+            return;
+
         const empty = document.createElement('p');
         empty.className = 'home-empty';
         empty.textContent = mine
