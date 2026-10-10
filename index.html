@@ -11,6 +11,17 @@
 <style>
 * { box-sizing: border-box; }
 
+/*
+ * İÇERİK GENİŞLİĞİ
+ * Sekmeler, ana sayfadaki inşaat kartları ve ayrıntı
+ * sayfası aynı genişliği kullanır. --side-gap, bu
+ * genişliği ortalamak için iki yanda kalan boşluktur.
+ */
+:root {
+    --content-width: 640px;
+    --side-gap: max(16px, calc((100% - var(--content-width)) / 2));
+}
+
 html, body {
     margin: 0;
     width: 100%;
@@ -21,25 +32,23 @@ html, body {
 
 #map {
     position: absolute;
-    inset: 0;
+    inset: 56px 0 0 0;
 }
 
 /* -----------------------------
    ALT PANELLER
    panel       : inşaat ekleme formu
    loginPanel  : giriş / kayıt
-   detailPanel : inşaatın tüm resimleri ve bilgileri
 ----------------------------- */
 
 #panel,
-#loginPanel,
-#detailPanel {
+#loginPanel {
     position: fixed;
     left: 50%;
     bottom: 20px;
     transform: translateX(-50%);
     width: min(92%, 400px);
-    max-height: calc(100% - 40px);
+    max-height: calc(100% - 96px);
     overflow-y: auto;
     background: white;
     border-radius: 18px;
@@ -49,13 +58,8 @@ html, body {
     display: none;
 }
 
-#detailPanel {
-    z-index: 25;
-}
-
 #panel h3,
-#loginPanel h3,
-#detailPanel h3 {
+#loginPanel h3 {
     margin: 0 0 14px;
     font-size: 20px;
 }
@@ -64,6 +68,11 @@ html, body {
 #placeType,
 #startDate,
 #endDate,
+#company,
+#buildStatus,
+#floors,
+#units,
+#description,
 #loginUsername,
 #loginEmail,
 #loginPassword {
@@ -174,16 +183,9 @@ button:disabled {
 }
 
 #cancelBtn,
-#loginCancelBtn,
-#detailCloseBtn {
+#loginCancelBtn {
     background: #eee;
     color: #333;
-}
-
-#detailDeleteBtn {
-    display: none;
-    background: #fdecea;
-    color: #c62828;
 }
 
 /* Giriş / kayıt arasında geçiş bağlantısı */
@@ -200,37 +202,78 @@ button:disabled {
 
 /* -----------------------------
    HARİTADAKİ İNŞAAT İŞARETİ
-   Üzerinde inşaatın türü yazar.
+   Sade, sabit büyüklükte bir iğne. Üstündeki etikette
+   ikon ve tür adı yazar; etiket sadece yakınlaşınca
+   görünür (bkz. MARKER_LABEL_MIN_ZOOM).
 ----------------------------- */
 
 .place-marker {
     /* Konumlandırmayı (position: absolute) MapLibre yapar. */
-    background: #28a745;
-    color: white;
-    border: 2px solid white;
-    border-radius: 14px;
-    padding: 4px 9px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-    box-shadow: 0 3px 10px rgba(0,0,0,.35);
+    width: 28px;
+    height: 37px;
     cursor: pointer;
 }
 
-.place-marker::after {
+.place-pin {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #28a745;
+    border: 3px solid white;
+    box-shadow: 0 3px 8px rgba(0,0,0,.35);
+}
+
+/* Ortadaki beyaz nokta */
+.place-pin::before {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: -8px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* Alttaki sivri uç */
+.place-pin::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -11px;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-top-color: #28a745;
+    border-top: 9px solid #28a745;
     border-bottom: 0;
 }
 
+.place-label {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 4px;
+    background: white;
+    color: #222;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+
+body.show-place-labels .place-label {
+    display: block;
+}
+
 /* -----------------------------
-   İŞARETE İLK TIKLAMA: KÜÇÜK KUTU
-   1 resim + ekleyen kişi
+   İŞARETE TIKLAMA: KÜÇÜK KUTU
+   Küçük resim + ekleyen kişi.
+   Kutuya tıklanınca ayrıntı sayfası açılır.
 ----------------------------- */
 
 .popup-content {
@@ -267,44 +310,414 @@ button:disabled {
 }
 
 /* -----------------------------
-   İKİNCİ TIKLAMA: AYRINTI PANELİ
-   Tüm resimler ve bilgiler
+   AYRINTI SAYFASI
+   Haritanın üzerine alttan açılır. Arka planı tüm sayfayı
+   kaplar, içerik ortadaki sütunda durur.
+   Üstte kaydırmalı resimler, altta üç sekme.
 ----------------------------- */
 
+#detailSheet {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+
+    /* Arka plan tüm sayfayı (haritayı da) kaplar. */
+    background: #f4f5f7;
+
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform .28s ease, visibility 0s linear .28s;
+}
+
+#detailSheet.open {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform .28s ease, visibility 0s;
+}
+
+/* İçerik sütunu: ana sayfadaki kartlarla aynı genişlikte */
+#detailInner {
+    position: relative;
+    width: 100%;
+    max-width: var(--content-width);
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,.12);
+}
+
+#detailCloseBtn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,.55);
+    color: white;
+    font-size: 18px;
+}
+
+#detailGallery {
+    position: relative;
+    flex: none;
+    height: 42%;
+    background: #111;
+}
+
+#detailImages {
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+#detailImages::-webkit-scrollbar {
+    display: none;
+}
+
+#detailImages img {
+    flex: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    scroll-snap-align: center;
+}
+
+/* Resimler arasında geçiş okları (bilgisayar için) */
+#detailPrevBtn,
+#detailNextBtn {
+    display: none;
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,.55);
+    color: white;
+    font-size: 26px;
+    line-height: 1;
+}
+
+#detailPrevBtn {
+    left: 12px;
+}
+
+#detailNextBtn {
+    right: 12px;
+}
+
+#detailCounter {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    background: rgba(0,0,0,.6);
+    color: white;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 10px;
+}
+
 #detailTitle {
+    flex: none;
+    margin: 14px 18px 8px;
+    font-size: 20px;
     overflow-wrap: anywhere;
 }
 
-.detail-row {
+#detailTabs {
+    display: flex;
+    flex: none;
+    padding: 0 10px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+#detailTabs button {
+    background: none;
+    border-radius: 0;
+    color: #666;
     font-size: 14px;
+    padding: 12px 4px;
+    border-bottom: 3px solid transparent;
+}
+
+#detailTabs button.active {
+    color: #28a745;
+    border-bottom-color: #28a745;
+}
+
+#detailBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 18px;
+}
+
+.tab-page {
+    display: none;
+}
+
+.tab-page.active {
+    display: block;
+}
+
+.tab-empty {
+    margin: 0;
+    font-size: 14px;
+    color: #777;
+}
+
+.detail-row {
+    font-size: 15px;
     color: #333;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
 }
 
 .detail-row span {
     color: #777;
 }
 
-#detailImages {
-    margin: 12px 0;
-}
-
-#detailImages img {
+#detailDeleteBtn {
+    display: none;
     width: 100%;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    display: block;
-    background: #eee;
+    margin-top: 14px;
+    background: #fdecea;
+    color: #c62828;
 }
 
 /* -----------------------------
-   KONUMUM VE HESAP BUTONLARI
+   ÜST SEKME ÇUBUĞU
+   Ana Sayfa / Harita. İki sekmenin toplam genişliği
+   ana sayfadaki inşaat kartlarıyla aynıdır.
+   Seçili sekme mavi, diğeri gri görünür.
 ----------------------------- */
 
-#locationBtn,
-#accountBtn {
+#tabBar {
     position: fixed;
-    top: 15px;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 56px;
+    z-index: 19;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 var(--side-gap);
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+
+#tabBar button[data-tab] {
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 20px;
+    background: #eceef1;
+    color: #666;
+    font-size: 15px;
+}
+
+#tabBar button[data-tab].active {
+    background: #1a73e8;
+    color: white;
+}
+
+/* Menü düğmesi: ana sayfada "Son eklenenler" başlığının sağında */
+#menuBtn {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: none;
+    color: #333;
+    font-size: 24px;
+}
+
+/* -----------------------------
+   ANA SAYFA
+   Haritanın üzerinde durur; Harita sekmesinde gizlenir.
+----------------------------- */
+
+#homePage {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    z-index: 18;
+    background: #f4f5f7;
+    display: none;
+    flex-direction: column;
+}
+
+body[data-tab="home"] #homePage {
+    display: flex;
+}
+
+#homeMenu {
+    position: absolute;
+    top: 54px;
+    right: var(--side-gap);
+    z-index: 2;
+    display: none;
+    flex-direction: column;
+    min-width: 210px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0,0,0,.25);
+    overflow: hidden;
+}
+
+#homeMenu.open {
+    display: flex;
+}
+
+#homeMenu button {
+    flex: none;
+    background: none;
+    border-radius: 0;
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 15px;
+    font-weight: normal;
+    color: #222;
+    border-bottom: 1px solid #eee;
+}
+
+#homeMenu button:last-child {
+    border-bottom: 0;
+}
+
+#homeMain {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px var(--side-gap) 16px;
+}
+
+#homeTitleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+#homeTitleRow h2 {
+    margin: 0;
+    font-size: 16px;
+    color: #444;
+}
+
+.home-card {
+    display: flex;
+    flex: none;
+    width: 100%;
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    text-align: left;
+    font-weight: normal;
+    color: #222;
+}
+
+.home-card img {
+    flex: none;
+    width: 88px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #eee;
+}
+
+.home-card-text {
+    min-width: 0;
+}
+
+.home-card-title {
+    font-size: 15px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-card-sub {
+    font-size: 13px;
+    color: #666;
+    margin-top: 3px;
+}
+
+.home-empty {
+    font-size: 14px;
+    color: #777;
+    line-height: 1.5;
+}
+
+/* -----------------------------
+   FORMDAKİ EK BİLGİLER (isteğe bağlı)
+----------------------------- */
+
+#extraFields {
+    margin-bottom: 10px;
+}
+
+#extraFields summary {
+    padding: 8px 0;
+    font-size: 14px;
+    color: #1a73e8;
+    cursor: pointer;
+}
+
+#description {
+    resize: vertical;
+    min-height: 70px;
+}
+
+/* -----------------------------
+   AYRINTI SAYFASI: PAYLAŞ DÜĞMESİ
+----------------------------- */
+
+#detailShareBtn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    flex: none;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 20px;
+    background: rgba(0,0,0,.55);
+    color: white;
+    font-size: 14px;
+}
+
+.detail-text {
+    font-size: 15px;
+    color: #333;
+    line-height: 1.5;
+    margin: 4px 0 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* -----------------------------
+   KONUMUM BUTONU
+----------------------------- */
+
+#locationBtn {
+    position: fixed;
+    top: 71px;
     right: 15px;
     z-index: 15;
 
@@ -330,22 +743,12 @@ button:disabled {
     padding: 0;
 }
 
-#accountBtn {
-    top: 73px;
-}
-
-#locationBtn:active,
-#accountBtn:active {
+#locationBtn:active {
     transform: scale(.94);
 }
 
 #locationBtn.loading {
     opacity: .6;
-}
-
-/* Giriş yapılmışsa yeşil görünür */
-body.signed-in #accountBtn {
-    background: #28a745;
 }
 
 /* -----------------------------
@@ -354,7 +757,7 @@ body.signed-in #accountBtn {
 
 #options {
     position: fixed;
-    top: 15px;
+    top: 71px;
     left: 15px;
     z-index: 15;
 
@@ -393,9 +796,32 @@ body.signed-in #accountBtn {
 
 <div id="map"></div>
 
-<button id="locationBtn" aria-label="Konumum" title="Konumum">📍</button>
+<!-- ANA SAYFA -->
+<div id="homePage">
 
-<button id="accountBtn" aria-label="Giriş yap" title="Giriş yap">👤</button>
+    <nav id="homeMenu">
+        <button id="menuLatest">Son eklenenler</button>
+        <button id="menuMine">Yüklemelerim</button>
+        <button id="menuMap">Haritayı aç</button>
+        <button id="menuAccount">Giriş yap / Kayıt ol</button>
+    </nav>
+
+    <main id="homeMain">
+        <div id="homeTitleRow">
+            <h2 id="homeTitle">Son eklenenler</h2>
+            <button id="menuBtn" aria-label="Menü">☰</button>
+        </div>
+        <div id="homeList"></div>
+    </main>
+</div>
+
+<!-- ÜST SEKME ÇUBUĞU -->
+<nav id="tabBar">
+    <button data-tab="home">🏠 Ana Sayfa</button>
+    <button data-tab="map">🗺️ Harita</button>
+</nav>
+
+<button id="locationBtn" aria-label="Konumum" title="Konumum">📍</button>
 
 <div id="options">
     <label>
@@ -430,7 +856,7 @@ body.signed-in #accountBtn {
 <div id="panel">
     <h3>İnşaat ekle</h3>
 
-    <input id="locationName" type="text" placeholder="İnşaat adı" maxlength="100">
+    <input id="locationName" type="text" placeholder="İnşaat adı (isteğe bağlı)" maxlength="100">
 
     <select id="placeType" aria-label="İnşaat türü">
         <option value="">Tür seç…</option>
@@ -447,6 +873,29 @@ body.signed-in #accountBtn {
         </label>
     </div>
 
+    <details id="extraFields">
+        <summary>Ek bilgiler (isteğe bağlı)</summary>
+
+        <input id="company" type="text" placeholder="Yapan firma" maxlength="100">
+
+        <select id="buildStatus" aria-label="Durum">
+            <option value="">Durum seç…</option>
+        </select>
+
+        <div class="field-row">
+            <label>
+                <span class="field-label">Kat sayısı</span>
+                <input id="floors" type="number" min="1" max="999" inputmode="numeric">
+            </label>
+            <label>
+                <span class="field-label">Daire / bölüm sayısı</span>
+                <input id="units" type="number" min="1" max="99999" inputmode="numeric">
+            </label>
+        </div>
+
+        <textarea id="description" placeholder="Açıklama" maxlength="500"></textarea>
+    </details>
+
     <span class="field-label">Resimler (en az 1, en fazla 5)</span>
 
     <input id="imageInput" type="file" accept="image/*" multiple>
@@ -461,21 +910,48 @@ body.signed-in #accountBtn {
     </div>
 </div>
 
-<!-- İNŞAAT AYRINTISI -->
-<div id="detailPanel">
+<!-- İNŞAAT AYRINTI SAYFASI -->
+<div id="detailSheet">
+<div id="detailInner">
+
+    <button id="detailShareBtn">🔗 Paylaş</button>
+
+    <button id="detailCloseBtn" aria-label="Kapat">✕</button>
+
+    <div id="detailGallery">
+        <div id="detailImages"></div>
+        <button id="detailPrevBtn" aria-label="Önceki resim">‹</button>
+        <button id="detailNextBtn" aria-label="Sonraki resim">›</button>
+        <div id="detailCounter"></div>
+    </div>
+
     <h3 id="detailTitle"></h3>
 
-    <div class="detail-row"><span>Tür:</span> <b id="detailType"></b></div>
-    <div class="detail-row"><span>Başlama:</span> <b id="detailStart"></b></div>
-    <div class="detail-row"><span>Bitiş:</span> <b id="detailEnd"></b></div>
-    <div class="detail-row"><span>Ekleyen:</span> <b id="detailUser"></b></div>
-
-    <div id="detailImages"></div>
-
-    <div class="buttons">
-        <button id="detailDeleteBtn">Sil</button>
-        <button id="detailCloseBtn">Kapat</button>
+    <div id="detailTabs">
+        <button data-tab="info">Bilgiler</button>
+        <button data-tab="comments">Yorumlar</button>
+        <button data-tab="uploader">Yükleyen</button>
     </div>
+
+    <div id="detailBody">
+
+        <div class="tab-page" data-page="info">
+            <div id="detailInfo"></div>
+            <button id="detailDeleteBtn">Bu inşaatı sil</button>
+        </div>
+
+        <div class="tab-page" data-page="comments">
+            <p class="tab-empty">Yorumlar yakında eklenecek.</p>
+        </div>
+
+        <div class="tab-page" data-page="uploader">
+            <div class="detail-row"><span>Kullanıcı adı:</span> <b id="detailUser"></b></div>
+            <div class="detail-row"><span>Üyelik tarihi:</span> <b id="detailUserSince"></b></div>
+            <div class="detail-row"><span>Eklediği inşaat:</span> <b id="detailUserCount"></b></div>
+        </div>
+
+    </div>
+</div>
 </div>
 
 <script type="module">
@@ -608,6 +1084,21 @@ const POI_ICON_SCALE = 0.5;
 
 /* Cadde ve sokak isimlerinin yazı küçültme oranı (1 = orijinal) */
 const STREET_TEXT_SCALE = 0.75;
+
+/*
+ * Etiketlerin kaç yakınlaştırma seviyesi DAHA ERKEN
+ * (daha uzaktan) görüneceği. 0 = haritanın kendi ayarı.
+ *
+ *   Sokak isimleri   : 15   -> 14
+ *   Ana cadde/yollar : 12.2 -> 11.2
+ *   Diğer yerler     : 15 / 16 / 17 -> 13.5 / 14.5 / 15.5
+ *                      (önem sırasına göre üç kademe)
+ *
+ * Sokaklar için 1'den büyük değer işe yaramaz: sokak
+ * isimleri harita verisinde 14. seviyeden önce yok.
+ */
+const STREET_ZOOM_SHIFT = 1;
+const PLACE_ZOOM_SHIFT = 1.5;
 
 /* Türkçe isim önceliği uygulanacak veri katmanları */
 const TURKISH_NAME_LAYERS = [
@@ -822,6 +1313,18 @@ function prepareStyle(style) {
             layer.layout.visibility =
                 visibleGroups[group] ? 'visible' : 'none';
         }
+
+        /* ETİKETLER DAHA UZAKTAN GÖRÜNSÜN */
+        const isStreetName =
+            sourceLayer === 'transportation_name' &&
+            !layer.layout['icon-image'];
+
+        const zoomShift = isStreetName
+            ? STREET_ZOOM_SHIFT
+            : (sourceLayer === 'poi' ? PLACE_ZOOM_SHIFT : 0);
+
+        if (zoomShift && typeof layer.minzoom === 'number')
+            layer.minzoom = Math.max(0, layer.minzoom - zoomShift);
 
         /* TÜRKÇE İSİM ÖNCELİĞİ */
         if (
@@ -1249,6 +1752,23 @@ PLACE_TYPES.forEach(type => {
     placeTypeSelect.appendChild(option);
 });
 
+/* İnşaatın durumu (isteğe bağlı bilgi) */
+const BUILD_STATUSES = [
+    { key: 'planned', label: 'Planlanıyor' },
+    { key: 'ongoing', label: 'Devam ediyor' },
+    { key: 'stopped', label: 'Durdu' },
+    { key: 'done',    label: 'Tamamlandı' }
+];
+
+const buildStatusSelect = document.getElementById('buildStatus');
+
+BUILD_STATUSES.forEach(status => {
+    const option = document.createElement('option');
+    option.value = status.key;
+    option.textContent = status.label;
+    buildStatusSelect.appendChild(option);
+});
+
 /* '2026-10-10' -> '10.10.2026' */
 function formatDate(value) {
 
@@ -1341,6 +1861,53 @@ async function compressImage(file) {
 
         scale *= 0.8;
     }
+}
+
+
+/*
+ * Haritadaki küçük kutuda gösterilen küçük resim.
+ * Kutunun boyutuna (220 x 140) göre ortadan kırpılır,
+ * keskin ekranlar için iki katı çözünürlükte kaydedilir.
+ * Birkaç on KB tuttuğu için hemen iner.
+ */
+const THUMB_WIDTH = 440;
+const THUMB_HEIGHT = 280;
+
+async function makeThumbnail(blob) {
+
+    const img = await loadImage(blob);
+
+    const scale = Math.max(
+        THUMB_WIDTH / img.width,
+        THUMB_HEIGHT / img.height
+    );
+
+    const width = img.width * scale;
+    const height = img.height * scale;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = THUMB_WIDTH;
+    canvas.height = THUMB_HEIGHT;
+
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, THUMB_WIDTH, THUMB_HEIGHT);
+
+    ctx.drawImage(
+        img,
+        (THUMB_WIDTH - width) / 2,
+        (THUMB_HEIGHT - height) / 2,
+        width,
+        height
+    );
+
+    const thumb = await canvasToJpeg(canvas, 0.7);
+
+    if (!thumb)
+        throw new Error('Küçük resim hazırlanamadı.');
+
+    return thumb;
 }
 
 
@@ -1502,6 +2069,15 @@ imageInput.addEventListener(
 
 const addBtn = document.getElementById('addBtn');
 
+/*
+ * Resimler hiç değişmediği için tarayıcı bir kez
+ * indirdikten sonra bir yıl boyunca tekrar indirmez.
+ */
+const IMAGE_METADATA = {
+    contentType: 'image/jpeg',
+    cacheControl: 'public, max-age=31536000, immutable'
+};
+
 let saving = false;
 
 addBtn.addEventListener(
@@ -1527,9 +2103,52 @@ addBtn.addEventListener(
         const endDate =
             document.getElementById('endDate').value || null;
 
-        if (!name) {
-            alert('Lütfen inşaat adı girin.');
-            return;
+        /*
+         * EK BİLGİLER (isteğe bağlı)
+         * Sadece doldurulanlar kayda eklenir.
+         */
+        const extra = {};
+
+        const company =
+            document.getElementById('company').value.trim();
+
+        const description =
+            document.getElementById('description').value.trim();
+
+        if (company)
+            extra.company = company;
+
+        if (buildStatusSelect.value)
+            extra.buildStatus = buildStatusSelect.value;
+
+        if (description)
+            extra.description = description;
+
+        for (const field of [
+            { id: 'floors', label: 'Kat sayısı', max: 999 },
+            { id: 'units', label: 'Daire / bölüm sayısı', max: 99999 }
+        ]) {
+
+            const raw = document.getElementById(field.id).value.trim();
+
+            if (!raw)
+                continue;
+
+            const number = Number(raw);
+
+            if (
+                !Number.isInteger(number) ||
+                number < 1 ||
+                number > field.max
+            ) {
+                alert(
+                    field.label + ' 1 ile ' + field.max +
+                    ' arasında bir tam sayı olmalı.'
+                );
+                return;
+            }
+
+            extra[field.id] = number;
         }
 
         if (!type) {
@@ -1584,7 +2203,7 @@ addBtn.addEventListener(
                 await uploadBytes(
                     imageRef,
                     images[i].blob,
-                    { contentType: 'image/jpeg' }
+                    IMAGE_METADATA
                 );
 
                 savedImages.push({
@@ -1595,7 +2214,24 @@ addBtn.addEventListener(
 
             addBtn.textContent = 'Kaydediliyor…';
 
-            await setDoc(placeRef, {
+            /* Haritadaki küçük kutu için küçük resim (ilk resimden). */
+            const thumbPath =
+                'places/' + user.uid + '/' +
+                placeRef.id + '_thumb.jpg';
+
+            const thumbRef = ref(storage, thumbPath);
+
+            uploadedPaths.push(thumbPath);
+
+            await uploadBytes(
+                thumbRef,
+                await makeThumbnail(images[0].blob),
+                IMAGE_METADATA
+            );
+
+            const thumbURL = await getDownloadURL(thumbRef);
+
+            const record = {
                 name: name,
                 type: type,
                 startDate: startDate,
@@ -1603,6 +2239,8 @@ addBtn.addEventListener(
                 lat: lngLat.lat,
                 lng: lngLat.lng,
                 images: savedImages,
+                thumbPath: thumbPath,
+                thumbURL: thumbURL,
                 uid: user.uid,
                 username: currentUsername,
 
@@ -1613,7 +2251,9 @@ addBtn.addEventListener(
                 status: 'approved',
 
                 createdAt: serverTimestamp()
-            });
+            };
+
+            await setDoc(placeRef, Object.assign(record, extra));
 
             closePanel();
 
@@ -1652,6 +2292,13 @@ function closePanel() {
     document.getElementById('startDate').value = '';
     document.getElementById('endDate').value = '';
 
+    document.getElementById('company').value = '';
+    document.getElementById('floors').value = '';
+    document.getElementById('units').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('extraFields').open = false;
+
+    buildStatusSelect.value = '';
     placeTypeSelect.value = '';
     imageInput.value = '';
 
@@ -1672,9 +2319,11 @@ function closePanel() {
    açılınca hepsi gelir; ekleme ve silmeler anında
    haritaya yansır.
 
-   İşaret       : üzerinde inşaatın türü yazar
-   1. tıklama   : küçük kutu (1 resim + ekleyen kişi)
-   2. tıklama   : ayrıntı paneli (tüm resimler, bilgiler)
+   İşaret            : sade iğne; yakınlaşınca üstünde
+                       ikon ve tür adı görünür
+   İşarete tıklama   : küçük kutu açılır, tekrar
+                       tıklanınca kapanır
+   Kutuya tıklama    : ayrıntı sayfası açılır
 ================================================= */
 
 /* kayıt kimliği -> { data, marker } */
@@ -1682,7 +2331,7 @@ const places = new Map();
 
 /* Küçük kutu tek tanedir, tıklanan işarete taşınır. */
 const placePopup = new maplibregl.Popup({
-    offset: 36,
+    offset: 42,
     maxWidth: '260px',
     closeOnClick: false
 });
@@ -1698,6 +2347,27 @@ map.on('click', () => {
     placePopup.remove();
 });
 
+/*
+ * İşaretlerin üstündeki etiket (ikon + tür adı) bu
+ * yakınlaştırma seviyesinden itibaren görünür.
+ * Sayı küçüldükçe daha uzaktan görünür.
+ */
+const MARKER_LABEL_MIN_ZOOM = 14;
+
+function updateMarkerLabels() {
+
+    const show = map.getZoom() >= MARKER_LABEL_MIN_ZOOM;
+
+    document.body.classList.toggle('show-place-labels', show);
+
+    /* Küçük kutu, etiket görünüyorsa onun da üstünde açılır. */
+    placePopup.setOffset(show ? 68 : 42);
+}
+
+map.on('zoom', updateMarkerLabels);
+
+updateMarkerLabels();
+
 function addPlaceMarker(id, data) {
 
     if (
@@ -1710,25 +2380,46 @@ function addPlaceMarker(id, data) {
     const type = placeType(data.type);
 
     const el = document.createElement('div');
-
     el.className = 'place-marker';
-    el.textContent = type.icon + ' ' + type.label;
+
+    /* Etiket: solda ikon, sağında tür adı. Yakınlaşınca görünür. */
+    const label = document.createElement('div');
+    label.className = 'place-label';
+    label.textContent = type.icon + ' ' + type.label;
+    el.appendChild(label);
+
+    /* Sade iğne */
+    const pin = document.createElement('div');
+    pin.className = 'place-pin';
+    el.appendChild(pin);
 
     el.addEventListener('click', event => {
 
-        /* Tıklama haritaya geçip kutuyu kapatmasın. */
+        /* Tıklama haritaya geçmesin. */
         event.stopPropagation();
 
+        /* Kutu bu işarette açıksa kapat, değilse aç. */
         if (activePopupId === id)
-            openDetail(id);
+            placePopup.remove();
         else
             showPlacePopup(id);
     });
 
+    /*
+     * İşarete hızlıca iki kez tıklamak (aç-kapat) haritada
+     * "çift tıklama ile yakınlaş" sayılmasın: işaretin üzerindeki
+     * çift tıklama ve dokunma olayları haritaya iletilmez.
+     */
+    ['dblclick', 'touchstart', 'touchmove', 'touchend', 'touchcancel']
+        .forEach(name => {
+            el.addEventListener(name, event => {
+                event.stopPropagation();
+            });
+        });
+
     const marker = new maplibregl.Marker({
         element: el,
-        anchor: 'bottom',
-        offset: [0, -8]
+        anchor: 'bottom'
     })
         .setLngLat([data.lng, data.lat])
         .addTo(map);
@@ -1747,7 +2438,7 @@ function removePlaceMarker(id) {
     places.delete(id);
 }
 
-/* 1. tıklama: 1 resim + ekleyen kişi */
+/* Küçük kutu: küçük resim + ekleyen kişi */
 function showPlacePopup(id) {
 
     const place = places.get(id);
@@ -1759,25 +2450,25 @@ function showPlacePopup(id) {
     const type = placeType(data.type);
     const images = Array.isArray(data.images) ? data.images : [];
 
+    /* Küçük resim yoksa (eski kayıt) ilk resim kullanılır. */
+    const thumbURL =
+        data.thumbURL || (images.length ? images[0].url : null);
+
     const content = document.createElement('div');
     content.className = 'popup-content';
 
-    if (images.length) {
+    if (thumbURL) {
         const img = document.createElement('img');
-        img.src = images[0].url;
-        img.alt = data.name || '';
+        img.src = thumbURL;
+        img.alt = type.label;
         content.appendChild(img);
     }
 
+    /* İnşaat adı burada gösterilmez; sadece tür. */
     const title = document.createElement('div');
     title.className = 'popup-title';
-    title.textContent = data.name || type.label;
+    title.textContent = type.icon + ' ' + type.label;
     content.appendChild(title);
-
-    const typeRow = document.createElement('div');
-    typeRow.className = 'popup-sub';
-    typeRow.textContent = type.icon + ' ' + type.label;
-    content.appendChild(typeRow);
 
     const userRow = document.createElement('div');
     userRow.className = 'popup-sub';
@@ -1805,13 +2496,208 @@ function showPlacePopup(id) {
 
 
 /* =================================================
-   AYRINTI PANELİ (2. tıklama)
+   AYRINTI SAYFASI
+   -------------------------------------------------
+   Haritanın üzerine alttan açılır. Üstte kaydırmalı
+   resimler, altta üç sekme: Bilgiler, Yorumlar,
+   Yükleyen.
 ================================================= */
 
-const detailPanel = document.getElementById('detailPanel');
+const detailSheet = document.getElementById('detailSheet');
+const detailImages = document.getElementById('detailImages');
+const detailCounter = document.getElementById('detailCounter');
 const detailDeleteBtn = document.getElementById('detailDeleteBtn');
+const detailPrevBtn = document.getElementById('detailPrevBtn');
+const detailNextBtn = document.getElementById('detailNextBtn');
 
 let detailId = null;
+
+function setDetailTab(name) {
+
+    detailSheet.querySelectorAll('#detailTabs button')
+        .forEach(button => {
+            button.classList.toggle(
+                'active',
+                button.dataset.tab === name
+            );
+        });
+
+    detailSheet.querySelectorAll('.tab-page')
+        .forEach(page => {
+            page.classList.toggle(
+                'active',
+                page.dataset.page === name
+            );
+        });
+
+    document.getElementById('detailBody').scrollTop = 0;
+}
+
+detailSheet.querySelectorAll('#detailTabs button')
+    .forEach(button => {
+        button.addEventListener('click', () => {
+            setDetailTab(button.dataset.tab);
+        });
+    });
+
+/* Resimler kaydırıldıkça "2 / 5" sayacı güncellenir. */
+function updateDetailCounter() {
+
+    const total = detailImages.children.length;
+
+    const index = currentImageIndex();
+
+    /* Oklar: tek resimde ve uçlarda gizlenir. */
+    detailPrevBtn.style.display = index > 0 ? 'block' : 'none';
+    detailNextBtn.style.display = index < total - 1 ? 'block' : 'none';
+
+    if (total < 2) {
+        detailCounter.style.display = 'none';
+        return;
+    }
+
+    detailCounter.style.display = 'block';
+    detailCounter.textContent = (index + 1) + ' / ' + total;
+}
+
+function currentImageIndex() {
+
+    const total = detailImages.children.length;
+
+    const index = Math.round(
+        detailImages.scrollLeft / (detailImages.clientWidth || 1)
+    );
+
+    return Math.max(0, Math.min(total - 1, index));
+}
+
+/* Bir sonraki (+1) ya da bir önceki (-1) resme geçer. */
+function stepImage(direction) {
+
+    detailImages.scrollTo({
+        left: (currentImageIndex() + direction) * detailImages.clientWidth,
+        behavior: 'smooth'
+    });
+}
+
+detailPrevBtn.addEventListener('click', () => stepImage(-1));
+detailNextBtn.addEventListener('click', () => stepImage(1));
+
+/* Pencere boyutu değişince resim hizası bozulmasın. */
+window.addEventListener('resize', () => {
+
+    if (!detailId)
+        return;
+
+    detailImages.scrollLeft =
+        currentImageIndex() * detailImages.clientWidth;
+});
+
+detailImages.addEventListener('scroll', updateDetailCounter);
+
+/* uid -> üyelik tarihi yazısı (tekrar tekrar okunmasın) */
+const memberSinceCache = new Map();
+
+async function showUploader(id, data) {
+
+    document.getElementById('detailUser').textContent =
+        data.username || '-';
+
+    let count = 0;
+
+    places.forEach(place => {
+        if (place.data.uid === data.uid)
+            count++;
+    });
+
+    document.getElementById('detailUserCount').textContent = count;
+
+    const sinceEl = document.getElementById('detailUserSince');
+
+    if (memberSinceCache.has(data.uid)) {
+        sinceEl.textContent = memberSinceCache.get(data.uid);
+        return;
+    }
+
+    sinceEl.textContent = '…';
+
+    let text = 'Bilinmiyor';
+
+    try {
+
+        const snapshot = await getDoc(doc(db, 'users', data.uid));
+
+        const createdAt =
+            snapshot.exists() ? snapshot.data().createdAt : null;
+
+        if (createdAt && typeof createdAt.toDate === 'function') {
+            text = createdAt.toDate().toLocaleDateString('tr-TR');
+            memberSinceCache.set(data.uid, text);
+        }
+
+    } catch (error) {
+
+        console.error(error);
+    }
+
+    /* Bu arada başka bir inşaat açıldıysa yazma. */
+    if (detailId === id)
+        sinceEl.textContent = text;
+}
+
+/* Bilgiler sekmesi: sadece doldurulmuş bilgiler gösterilir. */
+function renderDetailInfo(data) {
+
+    const box = document.getElementById('detailInfo');
+
+    box.textContent = '';
+
+    function addRow(label, value) {
+
+        if (value === undefined || value === null || value === '')
+            return;
+
+        const row = document.createElement('div');
+        row.className = 'detail-row';
+
+        const name = document.createElement('span');
+        name.textContent = label + ': ';
+        row.appendChild(name);
+
+        const text = document.createElement('b');
+        text.textContent = value;
+        row.appendChild(text);
+
+        box.appendChild(row);
+    }
+
+    const buildStatus =
+        BUILD_STATUSES.find(status => status.key === data.buildStatus);
+
+    addRow('Durum', buildStatus ? buildStatus.label : null);
+    addRow('Yapan firma', data.company);
+    addRow('Başlama tarihi', data.startDate ? formatDate(data.startDate) : null);
+    addRow('Bitiş tarihi', data.endDate ? formatDate(data.endDate) : null);
+    addRow('Kat sayısı', data.floors);
+    addRow('Daire / bölüm sayısı', data.units);
+
+    if (data.description) {
+
+        addRow('Açıklama', ' ');
+
+        const text = document.createElement('p');
+        text.className = 'detail-text';
+        text.textContent = data.description;
+        box.appendChild(text);
+    }
+
+    if (!box.children.length) {
+        const empty = document.createElement('p');
+        empty.className = 'tab-empty';
+        empty.textContent = 'Ek bilgi girilmemiş.';
+        box.appendChild(empty);
+    }
+}
 
 function openDetail(id) {
 
@@ -1828,46 +2714,58 @@ function openDetail(id) {
 
     detailId = id;
 
+    /* Başlıkta inşaat adı değil, türü yazar. */
     document.getElementById('detailTitle').textContent =
-        data.name || type.label;
-
-    document.getElementById('detailType').textContent =
         type.icon + ' ' + type.label;
 
-    document.getElementById('detailStart').textContent =
-        formatDate(data.startDate);
+    renderDetailInfo(data);
 
-    document.getElementById('detailEnd').textContent =
-        formatDate(data.endDate);
+    /* Adres çubuğu bu inşaatın bağlantısını göstersin. */
+    setHash(id);
 
-    document.getElementById('detailUser').textContent =
-        data.username || '-';
+    detailImages.textContent = '';
 
-    const box = document.getElementById('detailImages');
-
-    box.textContent = '';
-
-    images.forEach(image => {
+    images.forEach((image, index) => {
         const img = document.createElement('img');
         img.src = image.url;
-        img.alt = data.name || '';
-        img.loading = 'lazy';
-        box.appendChild(img);
+        img.alt = type.label;
+
+        /* İlk resim hemen, diğerleri kaydırıldıkça iner. */
+        if (index > 0)
+            img.loading = 'lazy';
+
+        detailImages.appendChild(img);
     });
 
-    /* "Sil" sadece inşaatı ekleyen kişiye görünür. */
+    detailImages.scrollLeft = 0;
+    updateDetailCounter();
+
+    refreshDeleteButton();
+
+    showUploader(id, data);
+    setDetailTab('info');
+
+    detailSheet.classList.add('open');
+}
+
+/* "Sil" sadece inşaatı ekleyen kişiye görünür. */
+function refreshDeleteButton() {
+
+    const place = places.get(detailId);
+
     detailDeleteBtn.style.display =
-        (currentUser && data.uid === currentUser.uid)
+        (place && currentUser && place.data.uid === currentUser.uid)
             ? 'block'
             : 'none';
-
-    detailPanel.scrollTop = 0;
-    detailPanel.style.display = 'block';
 }
 
 function closeDetail() {
-    detailPanel.style.display = 'none';
-    document.getElementById('detailImages').textContent = '';
+
+    /* Sayfa açılışındaki bağlantıyı silmemek için sadece açıksa. */
+    if (detailId)
+        setHash(null);
+
+    detailSheet.classList.remove('open');
     detailId = null;
 }
 
@@ -1875,6 +2773,20 @@ document.getElementById('detailCloseBtn').addEventListener(
     'click',
     closeDetail
 );
+
+/* Klavye: Esc kapatır, sağ/sol ok resim değiştirir. */
+document.addEventListener('keydown', event => {
+
+    if (!detailId)
+        return;
+
+    if (event.key === 'Escape')
+        closeDetail();
+    else if (event.key === 'ArrowRight')
+        stepImage(1);
+    else if (event.key === 'ArrowLeft')
+        stepImage(-1);
+});
 
 detailDeleteBtn.addEventListener(
     'click',
@@ -1888,7 +2800,7 @@ detailDeleteBtn.addEventListener(
         const id = detailId;
         const data = place.data;
 
-        if (!confirm('"' + (data.name || '') + '" silinsin mi?'))
+        if (!confirm('Bu inşaat silinsin mi?'))
             return;
 
         detailDeleteBtn.disabled = true;
@@ -1897,11 +2809,17 @@ detailDeleteBtn.addEventListener(
 
             await deleteDoc(doc(db, 'places', id));
 
-            (Array.isArray(data.images) ? data.images : [])
-                .forEach(image => {
-                    deleteObject(ref(storage, image.path))
-                        .catch(error => console.error(error));
-                });
+            const paths =
+                (Array.isArray(data.images) ? data.images : [])
+                    .map(image => image.path);
+
+            if (data.thumbPath)
+                paths.push(data.thumbPath);
+
+            paths.forEach(path => {
+                deleteObject(ref(storage, path))
+                    .catch(error => console.error(error));
+            });
 
             closeDetail();
 
@@ -1942,6 +2860,11 @@ onSnapshot(
             if (detailId === id)
                 closeDetail();
         });
+
+        firstSnapshotDone = true;
+
+        renderHomeList();
+        checkLinkedPlace();
     },
     error => {
         console.error(error);
@@ -2052,7 +2975,6 @@ async function askUsername() {
    GİRİŞ / KAYIT / ÇIKIŞ
 ================================================= */
 
-const accountBtn = document.getElementById('accountBtn');
 const loginPanel = document.getElementById('loginPanel');
 const loginBtn = document.getElementById('loginBtn');
 const loginSwitch = document.getElementById('loginSwitch');
@@ -2101,14 +3023,17 @@ function closeLoginPanel() {
 
 function updateAccountButton() {
 
-    document.body.classList.toggle('signed-in', !!currentUser);
-
-    const label = currentUser
+    /* Menüdeki hesap satırı */
+    document.getElementById('menuAccount').textContent = currentUser
         ? 'Çıkış yap (' + (currentUsername || currentUser.email) + ')'
-        : 'Giriş yap';
+        : 'Giriş yap / Kayıt ol';
 
-    accountBtn.title = label;
-    accountBtn.setAttribute('aria-label', label);
+    /* "Yüklemelerim" sadece giriş yapılmışken görünür. */
+    document.getElementById('menuMine').style.display =
+        currentUser ? 'block' : 'none';
+
+    /* "Yüklemelerim" listesi hesaba göre değişir. */
+    renderHomeList();
 }
 
 onAuthStateChanged(auth, user => {
@@ -2120,8 +3045,8 @@ onAuthStateChanged(auth, user => {
 
     updateAccountButton();
 
-    /* "Sil" düğmesi eski hesaba göre kalmasın. */
-    closeDetail();
+    /* Açık ayrıntı sayfasındaki "Sil" düğmesi yeni hesaba göre güncellensin. */
+    refreshDeleteButton();
 
     if (!user)
         return;
@@ -2139,7 +3064,8 @@ onAuthStateChanged(auth, user => {
     });
 });
 
-accountBtn.addEventListener('click', () => {
+/* Giriş yapılmamışsa giriş ekranını açar, yapılmışsa çıkış sorar. */
+function accountAction() {
 
     if (!currentUser) {
         pendingLngLat = null;
@@ -2153,7 +3079,9 @@ accountBtn.addEventListener('click', () => {
         closePanel();
         signOut(auth).catch(error => alert(firebaseErrorMessage(error)));
     }
-});
+}
+
+
 
 async function login() {
 
@@ -2258,6 +3186,358 @@ document.getElementById('loginCancelBtn').addEventListener(
     }
 );
 
+/* =================================================
+   PAYLAŞIM BAĞLANTISI
+   -------------------------------------------------
+   Her inşaatın kendi adresi vardır:
+       .../sayfa.html#insaat=<kimlik>
+   Ayrıntı sayfası açıkken adres çubuğu da bu adresi
+   gösterir. Bağlantıyla gelen kişide harita o
+   inşaata gider ve ayrıntı sayfası açılır.
+================================================= */
+
+const LINK_PREFIX = '#insaat=';
+
+function linkedIdFromHash() {
+
+    const hash = location.hash || '';
+
+    return hash.indexOf(LINK_PREFIX) === 0
+        ? decodeURIComponent(hash.slice(LINK_PREFIX.length))
+        : null;
+}
+
+function placeLink(id) {
+    return location.href.split('#')[0] +
+        LINK_PREFIX + encodeURIComponent(id);
+}
+
+/* Adres çubuğunu günceller (sayfa yenilenmez). */
+function setHash(id) {
+
+    try {
+        history.replaceState(
+            null,
+            '',
+            id
+                ? LINK_PREFIX + encodeURIComponent(id)
+                : location.pathname + location.search
+        );
+    } catch (error) {}
+}
+
+/* Sayfa bir bağlantıyla açıldıysa beklenen inşaat */
+let linkedPlaceId = linkedIdFromHash();
+
+let firstSnapshotDone = false;
+
+function openLinkedPlace(id) {
+
+    const place = places.get(id);
+
+    if (!place)
+        return false;
+
+    showTab('map');
+
+    map.jumpTo({
+        center: [place.data.lng, place.data.lat],
+        zoom: Math.max(map.getZoom(), 15)
+    });
+
+    openDetail(id);
+
+    return true;
+}
+
+/* Kayıtlar her geldiğinde çağrılır. */
+function checkLinkedPlace() {
+
+    if (!linkedPlaceId)
+        return;
+
+    if (openLinkedPlace(linkedPlaceId)) {
+        linkedPlaceId = null;
+        return;
+    }
+
+    if (firstSnapshotDone) {
+        linkedPlaceId = null;
+        setHash(null);
+        alert('Bu bağlantıdaki inşaat bulunamadı. Silinmiş olabilir.');
+    }
+}
+
+window.addEventListener('hashchange', () => {
+
+    const id = linkedIdFromHash();
+
+    if (id && id !== detailId && !openLinkedPlace(id))
+        alert('Bu bağlantıdaki inşaat bulunamadı. Silinmiş olabilir.');
+});
+
+const detailShareBtn = document.getElementById('detailShareBtn');
+
+detailShareBtn.addEventListener(
+    'click',
+    async function() {
+
+        const place = places.get(detailId);
+
+        if (!place)
+            return;
+
+        const url = placeLink(detailId);
+
+        /* Telefonda paylaşım menüsü (WhatsApp vb.) açılır. */
+        if (navigator.share) {
+
+            try {
+                await navigator.share({
+                    title: placeType(place.data.type).label + ' inşaatı',
+                    url: url
+                });
+            } catch (error) {}
+
+            return;
+        }
+
+        try {
+
+            await navigator.clipboard.writeText(url);
+
+            detailShareBtn.textContent = '✓ Bağlantı kopyalandı';
+
+            setTimeout(() => {
+                detailShareBtn.textContent = '🔗 Paylaş';
+            }, 2000);
+
+        } catch (error) {
+
+            prompt('Bağlantıyı kopyala:', url);
+        }
+    }
+);
+
+
+/* =================================================
+   SEKMELER VE ANA SAYFA
+   -------------------------------------------------
+   Üstte iki sekme vardır: Ana Sayfa ve Harita.
+   Ana sayfa haritanın üzerinde durur, Harita
+   sekmesine geçilince gizlenir.
+================================================= */
+
+const tabButtons = document.querySelectorAll('#tabBar button[data-tab]');
+const homeMenu = document.getElementById('homeMenu');
+const homeList = document.getElementById('homeList');
+
+/* Ana sayfada gösterilecek en fazla inşaat sayısı */
+const HOME_LIST_LIMIT = 50;
+
+function showTab(name) {
+
+    document.body.dataset.tab = name;
+
+    tabButtons.forEach(button => {
+        button.classList.toggle(
+            'active',
+            button.dataset.tab === name
+        );
+    });
+
+    homeMenu.classList.remove('open');
+
+    if (name === 'home')
+        placePopup.remove();
+}
+
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        showTab(button.dataset.tab);
+    });
+});
+
+/* MENÜ */
+
+document.getElementById('menuBtn').addEventListener(
+    'click',
+    event => {
+        event.stopPropagation();
+        homeMenu.classList.toggle('open');
+    }
+);
+
+/* Menü dışında bir yere tıklanınca menü kapanır. */
+document.addEventListener('click', event => {
+    if (!homeMenu.contains(event.target))
+        homeMenu.classList.remove('open');
+});
+
+document.getElementById('menuAccount').addEventListener(
+    'click',
+    () => {
+        homeMenu.classList.remove('open');
+        accountAction();
+    }
+);
+
+document.getElementById('menuLatest').addEventListener(
+    'click',
+    () => {
+        homeMenu.classList.remove('open');
+        setHomeMode('latest');
+    }
+);
+
+document.getElementById('menuMine').addEventListener(
+    'click',
+    () => {
+        homeMenu.classList.remove('open');
+        setHomeMode('mine');
+    }
+);
+
+document.getElementById('menuMap').addEventListener(
+    'click',
+    () => {
+        showTab('map');
+    }
+);
+
+/*
+ * ANA SAYFA LİSTESİ
+ *   latest : son eklenenler (herkesin). İnşaat adı gösterilmez.
+ *   mine   : giriş yapan kişinin kendi yükledikleri. İnşaat adı
+ *            sadece burada görünür.
+ */
+let homeMode = 'latest';
+
+function setHomeMode(mode) {
+    homeMode = mode;
+    renderHomeList();
+    document.getElementById('homeMain').scrollTop = 0;
+}
+
+function createdMillis(data) {
+
+    const createdAt = data.createdAt;
+
+    /* Yeni eklenen kayıtta sunucu saati henüz gelmemiş olabilir. */
+    return (createdAt && typeof createdAt.toMillis === 'function')
+        ? createdAt.toMillis()
+        : Date.now();
+}
+
+function renderHomeList() {
+
+    /* Çıkış yapıldıysa "Yüklemelerim" gösterilemez. */
+    if (homeMode === 'mine' && !currentUser)
+        homeMode = 'latest';
+
+    const mine = homeMode === 'mine';
+
+    document.getElementById('homeTitle').textContent =
+        mine ? 'Yüklemelerim' : 'Son eklenenler';
+
+    let items = [];
+
+    places.forEach((place, id) => {
+        if (!mine || place.data.uid === currentUser.uid)
+            items.push({ id: id, data: place.data });
+    });
+
+    items.sort((a, b) => createdMillis(b.data) - createdMillis(a.data));
+
+    if (!mine)
+        items = items.slice(0, HOME_LIST_LIMIT);
+
+    homeList.textContent = '';
+
+    if (!items.length) {
+
+        const empty = document.createElement('p');
+        empty.className = 'home-empty';
+        empty.textContent = mine
+            ? 'Henüz inşaat eklemedin. Harita sekmesinde bir noktaya ' +
+              'basılı tutarak ekleyebilirsin.'
+            : 'Henüz inşaat eklenmemiş. Harita sekmesinde bir noktaya ' +
+              'basılı tutarak ilk inşaatı ekleyebilirsin.';
+        homeList.appendChild(empty);
+
+        return;
+    }
+
+    items.forEach(item => {
+
+        const data = item.data;
+        const type = placeType(data.type);
+        const images = Array.isArray(data.images) ? data.images : [];
+        const typeText = type.icon + ' ' + type.label;
+
+        const thumbURL =
+            data.thumbURL || (images.length ? images[0].url : null);
+
+        const card = document.createElement('button');
+        card.className = 'home-card';
+
+        if (thumbURL) {
+            const img = document.createElement('img');
+            img.src = thumbURL;
+            img.alt = '';
+            img.loading = 'lazy';
+            card.appendChild(img);
+        }
+
+        const text = document.createElement('div');
+        text.className = 'home-card-text';
+
+        const title = document.createElement('div');
+        title.className = 'home-card-title';
+
+        const sub = document.createElement('div');
+        sub.className = 'home-card-sub';
+
+        if (mine) {
+
+            /* Kendi listesinde: ad (varsa) + tür */
+            title.textContent = data.name || typeText;
+
+            const createdAt = data.createdAt;
+
+            const date =
+                (createdAt && typeof createdAt.toDate === 'function')
+                    ? createdAt.toDate().toLocaleDateString('tr-TR')
+                    : '';
+
+            sub.textContent =
+                [data.name ? typeText : '', date]
+                    .filter(Boolean)
+                    .join(' · ');
+
+        } else {
+
+            /* Herkese açık listede ad gösterilmez. */
+            title.textContent = typeText;
+            sub.textContent = 'Ekleyen: ' + (data.username || '-');
+        }
+
+        text.appendChild(title);
+        text.appendChild(sub);
+        card.appendChild(text);
+
+        card.addEventListener('click', () => {
+            openDetail(item.id);
+        });
+
+        homeList.appendChild(card);
+    });
+}
+
+/* Bağlantıyla gelindiyse doğrudan harita, yoksa ana sayfa açılır. */
+showTab(linkedPlaceId ? 'map' : 'home');
+
+updateAccountButton();
 renderThumbs();
 
 </script>
