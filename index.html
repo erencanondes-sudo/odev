@@ -6,6 +6,9 @@
 <title>İnşaat Haritası</title>
 
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css">
+
+<!-- Alt menünün yazı tipi -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
 
 <style>
@@ -13,8 +16,8 @@
 
 /*
  * İÇERİK GENİŞLİĞİ
- * Sekmeler, ana sayfadaki inşaat kartları ve ayrıntı
- * sayfası aynı genişliği kullanır. --side-gap, bu
+ * Ana sayfadaki inşaat kartları ve ayrıntı sayfası
+ * aynı genişliği kullanır. --side-gap, bu
  * genişliği ortalamak için iki yanda kalan boşluktur.
  */
 :root {
@@ -32,7 +35,7 @@ html, body {
 
 #map {
     position: absolute;
-    inset: 56px 0 0 0;
+    inset: 0;
 }
 
 /* -----------------------------
@@ -48,7 +51,7 @@ html, body {
     bottom: 20px;
     transform: translateX(-50%);
     width: min(92%, 400px);
-    max-height: calc(100% - 96px);
+    max-height: calc(100% - 40px);
     overflow-y: auto;
     background: white;
     border-radius: 18px;
@@ -495,39 +498,148 @@ body.show-place-labels .place-label {
 }
 
 /* -----------------------------
-   ÜST SEKME ÇUBUĞU
-   Ana Sayfa / Harita. İki sekmenin toplam genişliği
-   ana sayfadaki inşaat kartlarıyla aynıdır.
-   Seçili sekme mavi, diğeri gri görünür.
+   ALT MENÜ
+   Ana Sayfa / Harita arasında geçiş. Ortadaki mavi
+   düğme menüyü açıp kapatır. Tasarım alt-menu.html
+   dosyasından alındı; buraya uyarlanan yerler:
+   z-index (form ve ayrıntı sayfasının altında kalsın)
+   ve düğmenin iç boşluğu.
 ----------------------------- */
 
-#tabBar {
+.alt-menu {
     position: fixed;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 56px;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 133px;               /* kapsül 78 + butonun taşan kısmı 55 */
+    filter: drop-shadow(0 8px 18px rgba(60, 80, 140, .14));
     z-index: 19;
+    font-family: 'Nunito', -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    /* Menünün boş köşeleri haritaya tıklamayı engellemesin. */
+    pointer-events: none;
+}
+
+.alt-menu .kapsul,
+.alt-menu .ac-kapa {
+    pointer-events: auto;
+}
+
+/* Beyaz kapsül */
+.kapsul {
+    position: relative;
+    height: 78px;
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    background: #fff;
+    border-radius: 39px;
+    transform-origin: 50% 100%;
+    transition: transform .35s cubic-bezier(.34, 1.4, .64, 1), opacity .25s ease;
+}
+
+/* Kapsül ile yuvarlak butonu yumuşakça birleştiren kavisler */
+.kapsul::before,
+.kapsul::after {
+    content: '';
+    position: absolute;
+    top: calc(100% - 0.5px);
+    width: 18px;
+    height: 14px;
+    pointer-events: none;
+}
+
+.kapsul::before {
+    left: calc(50% - 57px);
+    background: radial-gradient(circle at 0 100%, transparent 14px, #fff 14.5px);
+}
+
+.kapsul::after {
+    left: calc(50% + 39px);
+    background: radial-gradient(circle at 100% 100%, transparent 14px, #fff 14.5px);
+}
+
+/* Menü öğeleri */
+.oge {
+    width: 130px;
+    height: 62px;
+    border: none;
+    border-radius: 31px;
+    background: #f0f1f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    color: #2b2f3a;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .2s ease, transform .15s ease;
+}
+
+.oge:hover  { background: #e6e9f2; }
+.oge:active { transform: scale(.96); }
+.oge.aktif  { background: #e3edff; color: #1f6ff2; }
+.oge:focus-visible { outline: 3px solid #9cc2ff; outline-offset: 2px; }
+
+.oge .ikon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* Ortadaki mavi buton */
+.ac-kapa {
+    position: absolute;
+    left: 50%;
+    top: 47px;
+    flex: none;
+    width: 86px;
+    height: 86px;
+    margin-left: -43px;
+    padding: 0;
+    border: 5px solid #fff;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #3d8dff 0%, #1f6ff2 100%);
+    box-shadow: 0 10px 24px rgba(37, 117, 252, .45);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 var(--side-gap);
-    background: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,.18);
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease, box-shadow .2s ease;
 }
 
-#tabBar button[data-tab] {
-    height: 40px;
-    padding: 0 8px;
-    border-radius: 20px;
-    background: #eceef1;
-    color: #666;
-    font-size: 15px;
+.ac-kapa:hover  { box-shadow: 0 12px 30px rgba(37, 117, 252, .6); }
+.ac-kapa:active { transform: scale(.94); }
+.ac-kapa:focus-visible { outline: 3px solid #9cc2ff; outline-offset: 3px; }
+
+/*
+ * Ok: menü açıkken aşağı bakar (basınca kapanır),
+ * kapalıyken yukarı bakar (basınca açılır).
+ */
+.ac-kapa svg {
+    width: 30px;
+    height: 30px;
+    transform: rotate(180deg);
+    transition: transform .3s ease;
 }
 
-#tabBar button[data-tab].active {
-    background: #1a73e8;
-    color: white;
+/* Kapalı durum */
+.alt-menu.kapali .kapsul {
+    transform: scale(.2);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.alt-menu.kapali .ac-kapa svg { transform: rotate(0deg); }
+
+@media (max-width: 340px) {
+    .alt-menu { transform: translateX(-50%) scale(.9); transform-origin: 50% 100%; }
 }
 
 /* Menü düğmesi: ana sayfada "Son eklenenler" başlığının sağında */
@@ -550,7 +662,7 @@ body.show-place-labels .place-label {
     position: fixed;
     left: 0;
     right: 0;
-    top: 56px;
+    top: 0;
     bottom: 0;
     z-index: 18;
     background: #f4f5f7;
@@ -599,7 +711,8 @@ body[data-tab="home"] #homePage {
 #homeMain {
     flex: 1;
     overflow-y: auto;
-    padding: 12px var(--side-gap) 16px;
+    /* Alttaki boşluk: son kart alt menünün arkasında kalmasın. */
+    padding: 12px var(--side-gap) 180px;
 }
 
 #homeTitleRow {
@@ -717,7 +830,7 @@ body[data-tab="home"] #homePage {
 
 #locationBtn {
     position: fixed;
-    top: 71px;
+    top: 15px;
     right: 15px;
     z-index: 15;
 
@@ -757,7 +870,7 @@ body[data-tab="home"] #homePage {
 
 #options {
     position: fixed;
-    top: 71px;
+    top: 15px;
     left: 15px;
     z-index: 15;
 
@@ -815,10 +928,24 @@ body[data-tab="home"] #homePage {
     </main>
 </div>
 
-<!-- ÜST SEKME ÇUBUĞU -->
-<nav id="tabBar">
-    <button data-tab="home">🏠 Ana Sayfa</button>
-    <button data-tab="map">🗺️ Harita</button>
+<!-- ALT MENÜ -->
+<nav class="alt-menu" id="altMenu" aria-label="Alt menü">
+    <div class="kapsul" id="kapsul">
+        <a href="#" class="oge" data-sayfa="anasayfa">
+            <span class="ikon">🏠</span>
+            <span>Ana Sayfa</span>
+        </a>
+        <a href="#" class="oge" data-sayfa="harita">
+            <span class="ikon">🗺️</span>
+            <span>Harita</span>
+        </a>
+    </div>
+
+    <button class="ac-kapa" id="acKapa" type="button" aria-label="Menüyü aç/kapat" aria-expanded="true" aria-controls="kapsul">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 15 12 9 18 15"></polyline>
+        </svg>
+    </button>
 </nav>
 
 <button id="locationBtn" aria-label="Konumum" title="Konumum">📍</button>
@@ -1952,6 +2079,8 @@ async function openAddPanel(lngLat) {
     selectedLngLat = lngLat;
     renderThumbs();
     panel.style.display = 'block';
+
+    layerOpened('panel');
 }
 
 function renderThumbs() {
@@ -2283,6 +2412,12 @@ document.getElementById('cancelBtn').addEventListener(
 );
 
 function closePanel() {
+    resetPanel();
+    layerClosed('panel');
+}
+
+/* Formu gizler ve temizler (geri tuşuyla kapanırken de kullanılır). */
+function resetPanel() {
 
     panelSession++;
 
@@ -2720,9 +2855,6 @@ function openDetail(id) {
 
     renderDetailInfo(data);
 
-    /* Adres çubuğu bu inşaatın bağlantısını göstersin. */
-    setHash(id);
-
     detailImages.textContent = '';
 
     images.forEach((image, index) => {
@@ -2746,6 +2878,12 @@ function openDetail(id) {
     setDetailTab('info');
 
     detailSheet.classList.add('open');
+
+    /*
+     * Geri tuşu bu sayfayı kapatsın; adres çubuğu da
+     * bu inşaatın bağlantısını göstersin.
+     */
+    layerOpened('detail', LINK_PREFIX + encodeURIComponent(id));
 }
 
 /* "Sil" sadece inşaatı ekleyen kişiye görünür. */
@@ -2760,11 +2898,12 @@ function refreshDeleteButton() {
 }
 
 function closeDetail() {
+    hideDetail();
+    layerClosed('detail');
+}
 
-    /* Sayfa açılışındaki bağlantıyı silmemek için sadece açıksa. */
-    if (detailId)
-        setHash(null);
-
+/* Sadece ekrandan kaldırır (geri tuşuyla kapanırken de kullanılır). */
+function hideDetail() {
     detailSheet.classList.remove('open');
     detailId = null;
 }
@@ -3012,9 +3151,17 @@ loginSwitch.addEventListener('click', () => {
 function openLoginPanel() {
     loginPanel.style.display = 'block';
     document.getElementById('loginEmail').focus();
+
+    layerOpened('login');
 }
 
 function closeLoginPanel() {
+    hideLoginPanel();
+    layerClosed('login');
+}
+
+/* Sadece ekrandan kaldırır (geri tuşuyla kapanırken de kullanılır). */
+function hideLoginPanel() {
     loginPanel.style.display = 'none';
     document.getElementById('loginPassword').value = '';
     loginUsername.value = '';
@@ -3187,12 +3334,141 @@ document.getElementById('loginCancelBtn').addEventListener(
 );
 
 /* =================================================
+   GERİ TUŞU
+   -------------------------------------------------
+   Telefondaki geri tuşu (ya da kenardan kaydırma)
+   uygulamadan çıkmak yerine açık olan şeyi kapatır:
+   ayrıntı sayfası, ekleme formu ya da giriş ekranı.
+
+   Nasıl: bunlardan biri açılınca tarayıcı geçmişine
+   bir kayıt eklenir. Geri tuşu o kaydı geri alır,
+   biz de açık olanı kapatırız. Kapat düğmesiyle
+   kapatılınca kayıt kendimiz geri alınır.
+================================================= */
+
+/* Açık katmanlar, açılış sırasıyla: 'detail', 'panel', 'login' */
+const openLayers = [];
+
+/* Kendi yaptığımız, henüz tamamlanmamış geri alma işlemleri */
+let ignoredPops = 0;
+
+/*
+ * Geri alma işlemi sürerken açılan katmanlar burada bekler.
+ * (Tarayıcı geri almayı gecikmeli yapar; o bitmeden geçmişe
+ * kayıt eklenirse yanlış kayıt geri alınır.)
+ */
+let waitingLayers = [];
+
+const LAYER_HIDERS = {
+    detail: hideDetail,
+    panel: resetPanel,
+    login: hideLoginPanel
+};
+
+/* Bir katman açıldığında çağrılır. */
+function layerOpened(name, url) {
+
+    /* Geri alma sürüyorsa sıraya al. */
+    if (ignoredPops > 0) {
+
+        waitingLayers = waitingLayers.filter(item => item.name !== name);
+        waitingLayers.push({ name: name, url: url });
+
+        return;
+    }
+
+    try {
+
+        /* Zaten açıksa sadece adres güncellenir. */
+        if (openLayers.includes(name)) {
+
+            if (url) {
+                history.replaceState(
+                    { depth: openLayers.length },
+                    '',
+                    url
+                );
+            }
+
+            return;
+        }
+
+        openLayers.push(name);
+
+        history.pushState(
+            { depth: openLayers.length },
+            '',
+            url || location.href
+        );
+
+    } catch (error) {}
+}
+
+/* Bir katman düğmeyle (geri tuşu dışında) kapatıldığında çağrılır. */
+function layerClosed(name) {
+
+    /* Henüz geçmişe eklenmemişse sıradan çıkarmak yeterli. */
+    if (waitingLayers.some(item => item.name === name)) {
+        waitingLayers = waitingLayers.filter(item => item.name !== name);
+        return;
+    }
+
+    const index = openLayers.indexOf(name);
+
+    if (index < 0)
+        return;
+
+    openLayers.splice(index, 1);
+
+    ignoredPops++;
+    history.back();
+}
+
+window.addEventListener('popstate', event => {
+
+    /* Kendi geri alma işlemimiz tamamlandı. */
+    if (ignoredPops > 0) {
+
+        ignoredPops--;
+
+        if (ignoredPops === 0) {
+
+            const waiting = waitingLayers;
+            waitingLayers = [];
+
+            waiting.forEach(item => layerOpened(item.name, item.url));
+        }
+
+        return;
+    }
+
+    const depth = (event.state && event.state.depth) || 0;
+
+    /* İleri tuşu: kapanmış bir şeyi geri açmayız, geri döneriz. */
+    if (depth > openLayers.length) {
+        ignoredPops++;
+        history.go(openLayers.length - depth);
+        return;
+    }
+
+    /* Geri tuşu: en son açılandan başlayarak kapat. */
+    while (openLayers.length > depth)
+        LAYER_HIDERS[openLayers.pop()]();
+});
+
+/* Sayfa yenilendiyse eski geçmiş kaydı sıfırlanır. */
+try {
+    history.replaceState(null, '', location.href);
+} catch (error) {}
+
+
+/* =================================================
    PAYLAŞIM BAĞLANTISI
    -------------------------------------------------
    Her inşaatın kendi adresi vardır:
        .../sayfa.html#insaat=<kimlik>
    Ayrıntı sayfası açıkken adres çubuğu da bu adresi
-   gösterir. Bağlantıyla gelen kişide harita o
+   gösterir (bkz. GERİ TUŞU). Bağlantıyla gelen kişide harita o
    inşaata gider ve ayrıntı sayfası açılır.
 ================================================= */
 
@@ -3245,6 +3521,13 @@ function openLinkedPlace(id) {
         zoom: Math.max(map.getZoom(), 15)
     });
 
+    /*
+     * Adresteki bağlantı temizlenir; ayrıntı sayfası kendi
+     * geçmiş kaydını ekler. Böylece geri tuşu sayfayı kapatır
+     * ama uygulamadan çıkmaz.
+     */
+    setHash(null);
+
     openDetail(id);
 
     return true;
@@ -3269,6 +3552,10 @@ function checkLinkedPlace() {
 }
 
 window.addEventListener('hashchange', () => {
+
+    /* Kendi geri alma işlemlerimiz sırasında bir şey yapma. */
+    if (ignoredPops > 0)
+        return;
 
     const id = linkedIdFromHash();
 
@@ -3323,12 +3610,20 @@ detailShareBtn.addEventListener(
 /* =================================================
    SEKMELER VE ANA SAYFA
    -------------------------------------------------
-   Üstte iki sekme vardır: Ana Sayfa ve Harita.
+   Alt menüde iki sekme vardır: Ana Sayfa ve Harita.
    Ana sayfa haritanın üzerinde durur, Harita
    sekmesine geçilince gizlenir.
 ================================================= */
 
-const tabButtons = document.querySelectorAll('#tabBar button[data-tab]');
+const altMenu = document.getElementById('altMenu');
+const acKapa = document.getElementById('acKapa');
+const menuItems = document.querySelectorAll('.alt-menu .oge');
+
+/* Alt menüdeki öğe adı -> sekme adı */
+const MENU_TABS = {
+    anasayfa: 'home',
+    harita: 'map'
+};
 const homeMenu = document.getElementById('homeMenu');
 const homeList = document.getElementById('homeList');
 
@@ -3339,10 +3634,10 @@ function showTab(name) {
 
     document.body.dataset.tab = name;
 
-    tabButtons.forEach(button => {
-        button.classList.toggle(
-            'active',
-            button.dataset.tab === name
+    menuItems.forEach(item => {
+        item.classList.toggle(
+            'aktif',
+            MENU_TABS[item.dataset.sayfa] === name
         );
     });
 
@@ -3352,10 +3647,17 @@ function showTab(name) {
         placePopup.remove();
 }
 
-tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        showTab(button.dataset.tab);
+menuItems.forEach(item => {
+    item.addEventListener('click', event => {
+        event.preventDefault();
+        showTab(MENU_TABS[item.dataset.sayfa]);
     });
+});
+
+/* Mavi düğme: alt menüyü aç / kapat */
+acKapa.addEventListener('click', () => {
+    const closed = altMenu.classList.toggle('kapali');
+    acKapa.setAttribute('aria-expanded', String(!closed));
 });
 
 /* MENÜ */
