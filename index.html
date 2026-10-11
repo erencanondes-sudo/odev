@@ -747,6 +747,9 @@ body[data-tab="home"] #homePage {
     height: auto;
     aspect-ratio: 2.25 / 1;
     object-fit: fill;
+
+    /* Renkler soluklaştırılır; sayfa daha sakin görünsün. */
+    filter: saturate(.22);
     margin-bottom: 12px;
     border-radius: 12px;
     background: #e3e5e9;
@@ -867,7 +870,9 @@ body[data-tab="home"] #homePage {
 
 #locationBtn {
     position: fixed;
-    top: 15px;
+
+    /* Üstünde kaynak yazısı ("i") durur: 15 + 24 + 4 boşluk. */
+    top: 43px;
     right: 15px;
     z-index: 15;
 
@@ -903,13 +908,18 @@ body[data-tab="home"] #homePage {
 
 /* -----------------------------
    KAYNAK YAZISI ("i")
-   Konum düğmesinin hemen altında durur. Açılınca yazı
-   sola doğru uzar; soldaki görünüm seçenekleri kutusuna
-   binmemesi için dar tutulur ve birkaç satıra bölünür.
+   Sağ üstte, konum düğmesinin hemen üstünde durur.
+   "i" ile konum düğmesinin toplam boyu, soldaki görünüm
+   seçenekleri kutusunun boyuna eşittir (76 piksel).
+   Açılınca yazı sola ve aşağı doğru uzar, konum düğmesinin
+   üstüne biner; soldaki kutuya binmemesi için dar tutulur.
 ----------------------------- */
 
 .maplibregl-ctrl-top-right {
-    top: 61px;
+    top: 5px;
+
+    /* Açılan yazı konum düğmesinin (z-index 15) üstünde görünsün. */
+    z-index: 16;
 }
 
 .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact {
