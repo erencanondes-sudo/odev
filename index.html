@@ -649,7 +649,7 @@ body.show-place-labels .place-label {
     left: 50%;
 
     /* Ekranın altına yakın; telefonun alt çubuğu varsa onun üstünde. */
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     z-index: 19;
 }
@@ -802,24 +802,29 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /*
- * ÜST DÜĞMELER: Filtrele / Son eklenenler / Harita
- * Yan yana üç düğme. Yazı boyutu ekran genişliğine bağlıdır;
+ * ÜST DÜĞMELER: Filtrele / Son Eklenenler / Popülerler / Harita
+ * Yan yana dört düğme; satırın genişliğine yayılırlar. Yazı boyutu
+ * ekran genişliğine bağlıdır;
  * dar telefonlarda da tek satıra sığar.
  */
 #homeModeBox {
     display: flex;
-    gap: .45em;
+    flex: 1;
+    gap: .35em;
     min-width: 0;
-    font-size: min(16px, 3.6vw);
+    margin-right: .35em;
+    font-size: min(16px, 3.4vw);
 }
 
 #homeModeBox[hidden] {
     display: none;
 }
 
+/* Dört düğme satırdaki boş yeri aralarında paylaşıp doldurur. */
 #homeModeBox button {
-    flex: none;
-    padding: .5em .7em;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: .55em .3em;
     border: 1px solid #d5d8de;
     border-radius: 10px;
     background: white;
@@ -827,12 +832,6 @@ body[data-tab="map"] .ac-kapa svg {
     font-weight: bold;
     color: #444;
     white-space: nowrap;
-}
-
-/* "Filtrele" ve "Harita" kısa yazılı olduğu için biraz genişletilir. */
-#homeModeBox button[data-mode="filter"],
-#homeMapBtn {
-    min-width: 5.5em;
 }
 
 /* Seçili olan mavi görünür */
@@ -843,10 +842,11 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /*
- * ANA SAYFANIN İKİ SAYFASI: Filtrele | Son Eklenenler
- * İkisi yan yana durur; şerit (track) sağa sola kayarak seçili
+ * ANA SAYFANIN ÜÇ SAYFASI: Filtrele | Son Eklenenler | Popülerler
+ * Yan yana dururlar; şerit (track) sağa sola kayarak seçili
  * olanı gösterir. Parmakla çekilirken yandaki sayfa da görünür.
- * --page    : gösterilen sayfa (0 = Filtrele, 1 = Son Eklenenler)
+ * --page    : gösterilen sayfa (0 = Filtrele, 1 = Son Eklenenler,
+ *             2 = Popülerler)
  * --swipe-x : parmağın ne kadar yana çektiği
  */
 #homePager {
@@ -861,9 +861,9 @@ body[data-tab="map"] .ac-kapa svg {
     --page-gap: 3em;
 
     gap: var(--page-gap);
-    width: calc(200% + var(--page-gap));
+    width: calc(300% + 2 * var(--page-gap));
     transform: translateX(calc(
-        var(--page, 1) * (-50% - var(--page-gap) / 2) + var(--swipe-x, 0px)
+        var(--page, 1) * (-100% / 3 - var(--page-gap) / 3) + var(--swipe-x, 0px)
     ));
     transition: transform .28s ease;
 }
@@ -875,7 +875,7 @@ body[data-tab="map"] .ac-kapa svg {
 
 .home-page {
     flex: none;
-    width: calc((100% - var(--page-gap)) / 2);
+    width: calc((100% - 2 * var(--page-gap)) / 3);
     min-width: 0;
 }
 
@@ -1400,6 +1400,7 @@ body[data-tab="map"] .ac-kapa svg {
             <div id="homeModeBox">
                 <button data-mode="filter">Filtrele</button>
                 <button data-mode="latest">Son Eklenenler</button>
+                <button data-mode="popular">Popüler</button>
                 <button id="homeMapBtn">Harita</button>
             </div>
 
@@ -1461,6 +1462,11 @@ body[data-tab="map"] .ac-kapa svg {
         <!-- SAYFA: SON EKLENENLER (ya da "Yüklemelerim") -->
         <div class="home-page current" id="homeLatestPage">
             <div id="homeList"></div>
+        </div>
+
+        <!-- SAYFA: POPÜLERLER (şimdilik Son Eklenenler ile aynı içerik) -->
+        <div class="home-page" id="homePopularPage">
+            <div id="homePopularList"></div>
         </div>
 
         </div>
@@ -2498,6 +2504,7 @@ const PLACE_TYPES = [
     { key: 'apartman', label: 'Apartman', icon: '🏢' },
     { key: 'ev',       label: 'Ev',       icon: '🏠' },
     { key: 'site',     label: 'Site',     icon: '🏘️' },
+    { key: 'park',     label: 'Park',     icon: '🌳' },
     { key: 'okul',     label: 'Okul',     icon: '🏫' },
     { key: 'hastane',  label: 'Hastane',  icon: '🏥' },
     { key: 'kopru',    label: 'Köprü',    icon: '🌉' },
@@ -4786,7 +4793,7 @@ document.getElementById('loginCancelBtn').addEventListener(
    kapatılınca kayıt kendimiz geri alınır.
 ================================================= */
 
-/* Açık katmanlar, açılış sırasıyla: 'homeFilter', 'map', 'popup', 'mapFilter', 'detail', 'panel', 'login' */
+/* Açık katmanlar, açılış sırasıyla: 'homeFilter', 'map', 'popup', 'mapFilter', 'multi', 'homeMenu', 'detail', 'panel', 'login' */
 const openLayers = [];
 
 /* Kendi yaptığımız, henüz tamamlanmamış geri alma işlemleri */
@@ -4804,6 +4811,8 @@ const LAYER_HIDERS = {
     mapFilter: hideMapFilter,
     popup: () => placePopup.remove(),
     homeFilter: leaveHomeFilter,
+    multi: hideMultis,
+    homeMenu: hideHomeMenu,
     detail: hideDetail,
     panel: resetPanel,
     login: hideLoginPanel
@@ -5065,6 +5074,8 @@ const homeList = document.getElementById('homeList');
 const homeFilterList = document.getElementById('homeFilterList');
 const homeFilterPage = document.getElementById('homeFilterPage');
 const homeLatestPage = document.getElementById('homeLatestPage');
+const homePopularPage = document.getElementById('homePopularPage');
+const homePopularList = document.getElementById('homePopularList');
 const homeTrack = document.getElementById('homeTrack');
 
 /* Ana sayfada gösterilecek en fazla inşaat sayısı */
@@ -5092,7 +5103,7 @@ function setTab(name) {
         name === 'map' ? 'Ana sayfaya dön' : 'Haritayı aç'
     );
 
-    homeMenu.classList.remove('open');
+    closeHomeMenu();
 
     if (name === 'home') {
         placePopup.remove();
@@ -5126,25 +5137,43 @@ document.getElementById('menuBtn').addEventListener(
         homeMenu.style.top =
             (buttonBox.bottom - pageBox.top + 2) + 'px';
 
-        homeMenu.classList.toggle('open');
+        if (homeMenu.classList.contains('open')) {
+            closeHomeMenu();
+            return;
+        }
+
+        homeMenu.classList.add('open');
+
+        /* Geri tuşu önce bu menüyü kapatsın. */
+        layerOpened('homeMenu');
     }
 );
+
+/* Sadece ekrandan kaldırır (geri tuşuyla kapanırken de kullanılır). */
+function hideHomeMenu() {
+    homeMenu.classList.remove('open');
+}
+
+function closeHomeMenu() {
+    hideHomeMenu();
+    layerClosed('homeMenu');
+}
 
 /* Menü dışında bir yere tıklanınca menü kapanır. */
 document.addEventListener('click', event => {
     if (!homeMenu.contains(event.target))
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
 });
 
 /* Sayfa kaydırılınca menü kapanır. */
 document.getElementById('homeMain').addEventListener('scroll', () => {
-    homeMenu.classList.remove('open');
+    closeHomeMenu();
 });
 
 document.getElementById('menuAccount').addEventListener(
     'click',
     () => {
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
         accountAction();
     }
 );
@@ -5152,7 +5181,7 @@ document.getElementById('menuAccount').addEventListener(
 document.getElementById('menuLatest').addEventListener(
     'click',
     () => {
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
         setHomeMode('latest');
     }
 );
@@ -5160,7 +5189,7 @@ document.getElementById('menuLatest').addEventListener(
 document.getElementById('menuMine').addEventListener(
     'click',
     () => {
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
 
         /* Üye olmayan da görür; basınca uyarı alır ve giriş ekranı açılır. */
         if (!currentUser) {
@@ -5177,7 +5206,7 @@ document.getElementById('menuMine').addEventListener(
 document.getElementById('menuFilter').addEventListener(
     'click',
     () => {
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
         setHomeMode('filter');
     }
 );
@@ -5185,7 +5214,7 @@ document.getElementById('menuFilter').addEventListener(
 document.getElementById('menuClose').addEventListener(
     'click',
     () => {
-        homeMenu.classList.remove('open');
+        closeHomeMenu();
     }
 );
 
@@ -5200,6 +5229,7 @@ document.getElementById('menuMap').addEventListener(
  * ANA SAYFA LİSTESİ
  * Üstteki düğmelerden seçilir:
  *   latest : son eklenenler (herkesin). İnşaat adı gösterilmez.
+ *   popular: popülerler (şimdilik son eklenenlerle aynı).
  *   filter : şehir, ilçe, tür, eklenme tarihi ve bitiş tarihine
  *            göre süzülmüş liste. Aynı filtre haritadaki işaretlere
  *            de uygulanır (haritadaki filtre düğmesi).
@@ -5237,12 +5267,12 @@ function leaveHomeFilter() {
 
 /*
  * ANA SAYFADA YANA KAYDIRMA
- * Sıra: Filtrele -> Son eklenenler -> Harita. Sola kaydırınca
+ * Sıra: Filtrele -> Son Eklenenler -> Popülerler -> Harita. Sola kaydırınca
  * sonrakine, sağa kaydırınca öncekine geçilir. İçerik parmağı izler;
- * Filtrele ile Son Eklenenler arasında yandaki sayfa kayarak görünür.
+ * ilk üçü arasında yandaki sayfa kayarak görünür.
  * (Haritadan geri kaydırılamaz; orada kaydırma haritayı oynatır.)
  */
-const HOME_SWIPE_ORDER = ['filter', 'latest', 'map'];
+const HOME_SWIPE_ORDER = ['filter', 'latest', 'popular', 'map'];
 
 const homeMain = document.getElementById('homeMain');
 
@@ -5294,6 +5324,9 @@ homeMain.addEventListener('touchmove', event => {
 
             if (homeMode !== 'filter')
                 renderFilterList();
+
+            if (homeMode !== 'popular')
+                renderPopularList();
         }
     }
 
@@ -5351,7 +5384,7 @@ function endHomeSwipe() {
     }
 
     /* Yeni sayfa ve "çekme yok" aynı anda verilir: tek bir kayma olur. */
-    homeTrack.style.setProperty('--page', next === 'filter' ? 0 : 1);
+    homeTrack.style.setProperty('--page', homePageOf(next));
     setHomeSwipeX(0);
 
     setHomeMode(next);
@@ -5430,6 +5463,12 @@ function createMulti(box, allLabel, countWord) {
                 chosen.length + ' ' + countWord;
 
             box.classList.toggle('selected', chosen.length > 0);
+
+            /* En üstteki "Tüm ..." satırı, hiçbir seçim yokken işaretlidir. */
+            const all = list.querySelector('.multi-all');
+
+            if (all)
+                all.checked = chosen.length === 0;
         },
 
         /* Seçenekleri yeniler; listede kalmayan seçimler düşer. */
@@ -5444,6 +5483,31 @@ function createMulti(box, allLabel, countWord) {
             });
 
             list.textContent = '';
+
+            /*
+             * En üstte "Tüm ilçeler" / "Tüm türler" satırı durur.
+             * Basılınca bütün seçimler kalkar (hepsi gösterilir).
+             */
+            if (options.length) {
+
+                const row = document.createElement('label');
+                const input = document.createElement('input');
+                const name = document.createElement('span');
+
+                input.type = 'checkbox';
+                input.className = 'multi-all';
+                input.checked = multi.selected.size === 0;
+                name.textContent = allLabel;
+
+                input.addEventListener('change', () => {
+                    multi.clear();
+                    onFilterChange();
+                });
+
+                row.appendChild(input);
+                row.appendChild(name);
+                list.appendChild(row);
+            }
 
             options.forEach(item => {
 
@@ -5491,6 +5555,7 @@ function createMulti(box, allLabel, countWord) {
             multi.updateLabel();
         },
 
+        /* Sadece ekrandan kaldırır. */
         close() {
             box.classList.remove('open');
             button.setAttribute('aria-expanded', 'false');
@@ -5499,13 +5564,17 @@ function createMulti(box, allLabel, countWord) {
 
     button.addEventListener('click', () => {
 
-        const open = !box.classList.contains('open');
+        /* Açıksa kapanır. */
+        if (box.classList.contains('open')) {
+            closeMultis();
+            return;
+        }
 
-        /* Aynı anda tek liste açık kalır. */
-        closeMultis();
+        box.classList.add('open');
+        button.setAttribute('aria-expanded', 'true');
 
-        box.classList.toggle('open', open);
-        button.setAttribute('aria-expanded', String(open));
+        /* Geri tuşu önce bu listeyi kapatsın. */
+        layerOpened('multi');
     });
 
     return multi;
@@ -5514,9 +5583,15 @@ function createMulti(box, allLabel, countWord) {
 const districtMulti = createMulti(filterDistrict, 'Tüm ilçeler', 'ilçe');
 const typeMulti = createMulti(filterType, 'Tüm türler', 'tür');
 
-function closeMultis() {
+/* Sadece ekrandan kaldırır (geri tuşuyla kapanırken de kullanılır). */
+function hideMultis() {
     districtMulti.close();
     typeMulti.close();
+}
+
+function closeMultis() {
+    hideMultis();
+    layerClosed('multi');
 }
 
 function multiOpen() {
@@ -5525,13 +5600,20 @@ function multiOpen() {
 }
 
 /*
- * Liste açıkken dışarıda bir yere dokunulursa sadece liste kapanır;
- * dokunulan şey (düğme, kutu, kart...) çalışmaz.
+ * İşaret kutulu liste ya da sağ üstteki menü açıkken dışarıda bir
+ * yere dokunulursa sadece açık olan kapanır; dokunulan şey (düğme,
+ * kutu, kart...) çalışmaz.
  */
 let multiSwallow = false;
 
 function outsideMulti(event) {
     return !event.target.closest('.multi.open');
+}
+
+/* Sağ üstteki menü açık ve dokunuş menünün (ve düğmesinin) dışında mı? */
+function outsideHomeMenu(event) {
+    return homeMenu.classList.contains('open') &&
+        !event.target.closest('#homeMenu, #menuBtn');
 }
 
 ['pointerdown', 'mousedown', 'touchstart'].forEach(name => {
@@ -5541,7 +5623,9 @@ function outsideMulti(event) {
         event => {
 
             if (name === 'pointerdown')
-                multiSwallow = multiOpen() && outsideMulti(event);
+                multiSwallow =
+                    (multiOpen() && outsideMulti(event)) ||
+                    outsideHomeMenu(event);
 
             if (!multiSwallow)
                 return;
@@ -5565,7 +5649,10 @@ function outsideMulti(event) {
             if (!multiSwallow)
                 return;
 
-            closeMultis();
+            if (multiOpen())
+                closeMultis();
+
+            closeHomeMenu();
 
             /* Ardından gelebilecek tıklama da yutulur. */
             setTimeout(() => {
@@ -5956,6 +6043,9 @@ function renderHomeList() {
     if (filtering)
         renderFilterList();
 
+    if (homeMode === 'popular')
+        renderPopularList();
+
     let items = [];
 
     places.forEach((place, id) => {
@@ -5980,6 +6070,31 @@ function renderHomeList() {
               'basılı tutarak ekleyebilirsin.'
             : 'Henüz inşaat eklenmemiş. Harita sekmesinde bir noktaya ' +
               'basılı tutarak ilk inşaatı ekleyebilirsin.'
+    );
+}
+
+/*
+ * Popülerler sayfası. Şimdilik Son Eklenenler ile aynı içeriği
+ * gösterir; neye göre sıralanacağı sonra belirlenecek.
+ */
+function renderPopularList() {
+
+    let items = [];
+
+    places.forEach((place, id) => {
+        items.push({ id: id, data: place.data });
+    });
+
+    items.sort((a, b) => createdMillis(b.data) - createdMillis(a.data));
+
+    items = items.slice(0, HOME_LIST_LIMIT);
+
+    renderCards(
+        homePopularList,
+        items,
+        false,
+        'Henüz inşaat eklenmemiş. Harita sekmesinde bir noktaya ' +
+        'basılı tutarak ilk inşaatı ekleyebilirsin.'
     );
 }
 
@@ -6013,12 +6128,18 @@ function renderFilterList() {
 let homePageIndex = 1;
 let homeTrackTimer = null;
 
+/* Hangi mod hangi sayfada? ("Yüklemelerim" ortadaki sayfada gösterilir.) */
+function homePageOf(mode) {
+    return mode === 'filter' ? 0 : mode === 'popular' ? 2 : 1;
+}
+
 function placeHomeTrack() {
 
-    const index = homeMode === 'filter' ? 0 : 1;
+    const index = homePageOf(homeMode);
 
     homeFilterPage.classList.toggle('current', index === 0);
     homeLatestPage.classList.toggle('current', index === 1);
+    homePopularPage.classList.toggle('current', index === 2);
 
     homeTrack.style.setProperty('--page', index);
 
