@@ -718,7 +718,7 @@ body[data-tab="map"] .ac-kapa svg {
     position: absolute;
     top: 54px;
     right: var(--side-gap);
-    z-index: 2;
+    z-index: 5;
     display: none;
     flex-direction: column;
     min-width: 210px;
@@ -802,7 +802,7 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /*
- * ÜST DÜĞMELER: Son eklenenler / Filtrele / Harita
+ * ÜST DÜĞMELER: Filtrele / Son eklenenler / Harita
  * Yan yana üç düğme. Yazı boyutu ekran genişliğine bağlıdır;
  * dar telefonlarda da tek satıra sığar.
  */
@@ -843,29 +843,53 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /*
- * Ana sayfada yana kaydırırken filtre kutusu ve liste parmağı izler.
- * --swipe-x: ne kadar yana çekildiği.
+ * ANA SAYFANIN İKİ SAYFASI: Filtrele | Son Eklenenler
+ * İkisi yan yana durur; şerit (track) sağa sola kayarak seçili
+ * olanı gösterir. Parmakla çekilirken yandaki sayfa da görünür.
+ * --page    : gösterilen sayfa (0 = Filtrele, 1 = Son Eklenenler)
+ * --swipe-x : parmağın ne kadar yana çektiği
  */
-#filterBox,
-#homeList {
-    transform: translateX(var(--swipe-x, 0px));
-    transition: transform .2s ease;
+#homePager {
+    overflow-x: clip;
+}
+
+#homeTrack {
+    display: flex;
+    align-items: flex-start;
+
+    /* Geçiş sırasında iki sayfa arasında görünen boşluk */
+    --page-gap: 3em;
+
+    gap: var(--page-gap);
+    width: calc(200% + var(--page-gap));
+    transform: translateX(calc(
+        var(--page, 1) * (-50% - var(--page-gap) / 2) + var(--swipe-x, 0px)
+    ));
+    transition: transform .28s ease;
+}
+
+/* Parmak ekrandayken şerit parmağı gecikmesiz izler. */
+#homeMain.swiping #homeTrack {
+    transition: none;
+}
+
+.home-page {
+    flex: none;
+    width: calc((100% - var(--page-gap)) / 2);
+    min-width: 0;
+}
+
+/* Geçiş yokken görünmeyen sayfa yer kaplamaz (boş kaydırma olmasın). */
+#homeTrack:not(.both) .home-page:not(.current) {
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
 }
 
 /* Açılan işaret kutulu liste alttaki kartların üstünde kalsın. */
 #filterBox {
     position: relative;
     z-index: 2;
-}
-
-#homeMain.swiping #filterBox,
-#homeMain.swiping #homeList {
-    transition: none;
-}
-
-/* Haritadaki panele taşınan filtre kutusu kaymaz. */
-#mapFilterSlot #filterBox {
-    transform: none;
 }
 
 /* YÜKLENİYOR (kayıtlar gelene kadar ekranın ortasında) */
@@ -1354,7 +1378,7 @@ body[data-tab="map"] .ac-kapa svg {
 <div id="homePage">
 
     <nav id="homeMenu">
-        <button id="menuLatest">Son eklenenler</button>
+        <button id="menuLatest">Son Eklenenler</button>
         <button id="menuFilter">Filtrele</button>
         <button id="menuMine">Yüklemelerim</button>
         <button id="menuMap">Haritayı aç</button>
@@ -1374,8 +1398,8 @@ body[data-tab="map"] .ac-kapa svg {
 
         <div id="homeTitleRow">
             <div id="homeModeBox">
-                <button data-mode="latest">Son eklenenler</button>
                 <button data-mode="filter">Filtrele</button>
+                <button data-mode="latest">Son Eklenenler</button>
                 <button id="homeMapBtn">Harita</button>
             </div>
 
@@ -1383,7 +1407,11 @@ body[data-tab="map"] .ac-kapa svg {
             <h2 id="homeTitle" hidden>Yüklemelerim</h2>
             <button id="menuBtn" aria-label="Menü">☰</button>
         </div>
-        <!-- FİLTRE ("Filtrele" düğmesine basılınca görünür) -->
+        <div id="homePager">
+        <div id="homeTrack" style="--page: 1">
+
+        <!-- SAYFA: FİLTRELE (filtre kutusu ve filtreye uyan inşaatlar) -->
+        <div class="home-page" id="homeFilterPage">
         <div id="filterBox">
             <div class="filter-grid">
                 <label>
@@ -1427,7 +1455,16 @@ body[data-tab="map"] .ac-kapa svg {
             </div>
         </div>
 
-        <div id="homeList"></div>
+        <div id="homeFilterList"></div>
+        </div>
+
+        <!-- SAYFA: SON EKLENENLER (ya da "Yüklemelerim") -->
+        <div class="home-page current" id="homeLatestPage">
+            <div id="homeList"></div>
+        </div>
+
+        </div>
+        </div>
     </main>
 </div>
 
@@ -5025,6 +5062,10 @@ const altMenu = document.getElementById('altMenu');
 const acKapa = document.getElementById('acKapa');
 const homeMenu = document.getElementById('homeMenu');
 const homeList = document.getElementById('homeList');
+const homeFilterList = document.getElementById('homeFilterList');
+const homeFilterPage = document.getElementById('homeFilterPage');
+const homeLatestPage = document.getElementById('homeLatestPage');
+const homeTrack = document.getElementById('homeTrack');
 
 /* Ana sayfada gösterilecek en fazla inşaat sayısı */
 const HOME_LIST_LIMIT = 50;
@@ -5196,11 +5237,12 @@ function leaveHomeFilter() {
 
 /*
  * ANA SAYFADA YANA KAYDIRMA
- * Sıra: Son eklenenler -> Filtrele -> Harita. Sola kaydırınca
- * sonrakine, sağa kaydırınca öncekine geçilir. İçerik parmağı izler.
+ * Sıra: Filtrele -> Son eklenenler -> Harita. Sola kaydırınca
+ * sonrakine, sağa kaydırınca öncekine geçilir. İçerik parmağı izler;
+ * Filtrele ile Son Eklenenler arasında yandaki sayfa kayarak görünür.
  * (Haritadan geri kaydırılamaz; orada kaydırma haritayı oynatır.)
  */
-const HOME_SWIPE_ORDER = ['latest', 'filter', 'map'];
+const HOME_SWIPE_ORDER = ['filter', 'latest', 'map'];
 
 const homeMain = document.getElementById('homeMain');
 
@@ -5243,8 +5285,16 @@ homeMain.addEventListener('touchmove', event => {
 
         homeSwipe.horizontal = Math.abs(dx) > Math.abs(dy);
 
-        if (homeSwipe.horizontal)
+        if (homeSwipe.horizontal) {
+
             homeMain.classList.add('swiping');
+
+            /* Yandaki sayfa da görünsün; filtre sayfası hazır olsun. */
+            homeTrack.classList.add('both');
+
+            if (homeMode !== 'filter')
+                renderFilterList();
+        }
     }
 
     if (!homeSwipe.horizontal)
@@ -5252,8 +5302,8 @@ homeMain.addEventListener('touchmove', event => {
 
     homeSwipe.dx = dx;
 
-    /* İlk sayfada geriye doğru çekiş zorlaşır. */
-    const atEdge = homeMode === 'latest' && dx > 0;
+    /* En baştaki sayfada geriye doğru çekiş zorlaşır. */
+    const atEdge = homeMode === HOME_SWIPE_ORDER[0] && dx > 0;
 
     setHomeSwipeX(atEdge ? dx * 0.25 : dx);
 
@@ -5285,33 +5335,26 @@ function endHomeSwipe() {
         HOME_SWIPE_ORDER.indexOf(homeMode) + direction
     ];
 
+    /* Şerit, parmağın bıraktığı yerden kayarak yerine oturur. */
     if (!enough || !next) {
         setHomeSwipeX(0);
+        settleHomeTrack();
         return;
     }
 
     /* Harita kendi hareketiyle (alttan) açılır. */
     if (next === 'map') {
         setHomeSwipeX(0);
+        settleHomeTrack();
         showTab('map');
         return;
     }
 
-    /* Eski içerik kayarak çıkar, yenisi karşı taraftan kayarak girer. */
-    setHomeSwipeX(-direction * width);
+    /* Yeni sayfa ve "çekme yok" aynı anda verilir: tek bir kayma olur. */
+    homeTrack.style.setProperty('--page', next === 'filter' ? 0 : 1);
+    setHomeSwipeX(0);
 
-    setTimeout(() => {
-
-        homeMain.classList.add('swiping');
-        setHomeMode(next);
-        setHomeSwipeX(direction * width);
-
-        homeMain.getBoundingClientRect();
-
-        homeMain.classList.remove('swiping');
-        setHomeSwipeX(0);
-
-    }, 180);
+    setHomeMode(next);
 }
 
 homeMain.addEventListener('touchend', endHomeSwipe, { passive: true });
@@ -5811,7 +5854,7 @@ function hideMapFilter() {
     mapFilterPanel.style.display = 'none';
 
     /* Kutu ana sayfadaki yerine döner. */
-    document.getElementById('homeMain').insertBefore(filterBox, homeList);
+    homeFilterPage.insertBefore(filterBox, homeFilterList);
 
     renderHomeList();
 }
@@ -5904,13 +5947,14 @@ function renderHomeList() {
     }
 
     /* Filtre kutusu haritadaki panele taşınmışsa ona dokunma. */
-    if (filterBox.parentElement !== mapFilterSlot) {
+    if (filterBox.parentElement !== mapFilterSlot)
+        filterBox.style.display = 'block';
 
-        filterBox.style.display = filtering ? 'block' : 'none';
+    placeHomeTrack();
 
-        if (filtering)
-            refreshFilterOptions();
-    }
+    /* Filtre sayfası sadece açıkken (ya da ona doğru kaydırılırken) çizilir. */
+    if (filtering)
+        renderFilterList();
 
     let items = [];
 
@@ -5919,18 +5963,88 @@ function renderHomeList() {
         if (mine && place.data.uid !== currentUser.uid)
             return;
 
-        if (filtering && !matchesFilter(place.data))
-            return;
-
         items.push({ id: id, data: place.data });
     });
 
     items.sort((a, b) => createdMillis(b.data) - createdMillis(a.data));
 
-    if (homeMode === 'latest')
+    if (!mine)
         items = items.slice(0, HOME_LIST_LIMIT);
 
-    homeList.textContent = '';
+    renderCards(
+        homeList,
+        items,
+        mine,
+        mine
+            ? 'Henüz inşaat eklemedin. Harita sekmesinde bir noktaya ' +
+              'basılı tutarak ekleyebilirsin.'
+            : 'Henüz inşaat eklenmemiş. Harita sekmesinde bir noktaya ' +
+              'basılı tutarak ilk inşaatı ekleyebilirsin.'
+    );
+}
+
+/* Filtre sayfası: seçenekler ve uygulanmış filtreye uyan inşaatlar */
+function renderFilterList() {
+
+    if (filterBox.parentElement !== mapFilterSlot)
+        refreshFilterOptions();
+
+    const items = [];
+
+    places.forEach((place, id) => {
+        if (matchesFilter(place.data))
+            items.push({ id: id, data: place.data });
+    });
+
+    items.sort((a, b) => createdMillis(b.data) - createdMillis(a.data));
+
+    renderCards(
+        homeFilterList,
+        items,
+        false,
+        'Bu filtreye uyan inşaat yok.'
+    );
+}
+
+/*
+ * Şeridi seçili sayfaya getirir. Sayfa değiştiyse kayarak geçer;
+ * geçiş bitene kadar iki sayfa da görünür kalır.
+ */
+let homePageIndex = 1;
+let homeTrackTimer = null;
+
+function placeHomeTrack() {
+
+    const index = homeMode === 'filter' ? 0 : 1;
+
+    homeFilterPage.classList.toggle('current', index === 0);
+    homeLatestPage.classList.toggle('current', index === 1);
+
+    homeTrack.style.setProperty('--page', index);
+
+    if (index !== homePageIndex) {
+        homePageIndex = index;
+        homeTrack.classList.add('both');
+    }
+
+    settleHomeTrack();
+}
+
+/* Kayma bittikten sonra görünmeyen sayfa yeniden gizlenir. */
+function settleHomeTrack() {
+
+    clearTimeout(homeTrackTimer);
+
+    homeTrackTimer = setTimeout(() => {
+        if (!homeSwipe)
+            homeTrack.classList.remove('both');
+    }, 320);
+}
+
+/* Verilen kutuya inşaat kartlarını çizer. */
+function renderCards(container, items, mine, emptyText) {
+
+    container.textContent = '';
 
     if (!items.length) {
 
@@ -5943,16 +6057,9 @@ function renderHomeList() {
 
         const empty = document.createElement('p');
         empty.className = 'home-empty';
+        empty.textContent = emptyText;
 
-        empty.textContent = filtering
-            ? 'Bu filtreye uyan inşaat yok.'
-            : mine
-                ? 'Henüz inşaat eklemedin. Harita sekmesinde bir noktaya ' +
-                  'basılı tutarak ekleyebilirsin.'
-                : 'Henüz inşaat eklenmemiş. Harita sekmesinde bir noktaya ' +
-                  'basılı tutarak ilk inşaatı ekleyebilirsin.';
-
-        homeList.appendChild(empty);
+        container.appendChild(empty);
 
         return;
     }
@@ -6036,7 +6143,7 @@ function renderHomeList() {
             openDetail(item.id);
         });
 
-        homeList.appendChild(card);
+        container.appendChild(card);
     });
 }
 
