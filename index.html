@@ -870,9 +870,7 @@ body[data-tab="home"] #homePage {
 
 #locationBtn {
     position: fixed;
-
-    /* Üstünde kaynak yazısı ("i") durur: 15 + 24 + 4 boşluk. */
-    top: 43px;
+    top: 10px;
     right: 15px;
     z-index: 15;
 
@@ -908,25 +906,18 @@ body[data-tab="home"] #homePage {
 
 /* -----------------------------
    KAYNAK YAZISI ("i")
-   Sağ üstte, konum düğmesinin hemen üstünde durur.
-   "i" ile konum düğmesinin toplam boyu, soldaki görünüm
-   seçenekleri kutusunun boyuna eşittir (76 piksel).
-   Açılınca yazı sola ve aşağı doğru uzar, konum düğmesinin
-   üstüne biner; soldaki kutuya binmemesi için dar tutulur.
+   Sol üstte, görünüm seçenekleri kutusunun hemen
+   altında durur. Açılınca yazı sağa doğru tek satır
+   halinde uzar.
 ----------------------------- */
 
-.maplibregl-ctrl-top-right {
-    top: 5px;
-
-    /* Açılan yazı konum düğmesinin (z-index 15) üstünde görünsün. */
-    z-index: 16;
+.maplibregl-ctrl-top-left {
+    top: 72px;
 }
 
-.maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact {
-    box-sizing: border-box;
-    margin: 10px 27px 0 0;
-    max-width: calc(100vw - 244px);
-    font-size: 10.5px;
+.maplibregl-ctrl-top-left .maplibregl-ctrl-attrib.maplibregl-compact {
+    margin: 0 0 0 15px;
+    white-space: nowrap;
 }
 
 /* -----------------------------
@@ -935,13 +926,13 @@ body[data-tab="home"] #homePage {
 
 #options {
     position: fixed;
-    top: 15px;
+    top: 10px;
     left: 15px;
     z-index: 15;
 
     background: white;
     border-radius: 14px;
-    padding: 6px 12px;
+    padding: 4px 12px;
 
     box-shadow: 0 2px 10px rgba(0,0,0,.25);
 
@@ -953,7 +944,7 @@ body[data-tab="home"] #homePage {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 0;
+    padding: 3px 0;
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
@@ -1320,7 +1311,7 @@ const map = new maplibregl.Map({
  */
 map.addControl(
     new maplibregl.AttributionControl({ compact: true }),
-    'top-right'
+    'top-left'
 );
 
 /*
