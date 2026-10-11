@@ -144,8 +144,9 @@ html, body {
     overflow-wrap: anywhere;
 }
 
-#addressManual {
-    display: none;
+#addressFields .field-row > * {
+    flex: 1;
+    min-width: 0;
 }
 
 #imageInput {
@@ -1215,14 +1216,18 @@ body[data-tab="home"] #homePage {
 
     <div id="addressInfo"></div>
 
-    <!-- Adres otomatik bulunamazsa elle girilir (şehir ve ilçe zorunlu) -->
-    <div id="addressManual">
-        <select id="addrCity" aria-label="Şehir">
-            <option value="">Şehir seç… (zorunlu)</option>
-        </select>
-        <input id="addrDistrict" type="text" placeholder="İlçe (zorunlu)" maxlength="50">
-        <input id="addrNeighbourhood" type="text" placeholder="Mahalle" maxlength="100">
-        <input id="addrStreet" type="text" placeholder="Cadde / sokak" maxlength="100">
+    <!-- Adres: otomatik doldurulur, elle değiştirilebilir (şehir ve ilçe zorunlu) -->
+    <div id="addressFields">
+        <div class="field-row">
+            <select id="addrCity" aria-label="Şehir">
+                <option value="">Şehir (zorunlu)</option>
+            </select>
+            <select id="addrDistrict" aria-label="İlçe"></select>
+        </div>
+        <div class="field-row">
+            <input id="addrNeighbourhood" type="text" placeholder="Mahalle" maxlength="100">
+            <input id="addrStreet" type="text" placeholder="Cadde / sokak" maxlength="100">
+        </div>
     </div>
 
     <input id="locationName" type="text" placeholder="İnşaat adı (isteğe bağlı)" maxlength="100">
@@ -2320,8 +2325,9 @@ async function makeThumbnail(blob) {
    Haritada basılı tutulan noktanın adresi, harita
    verisinin kaynağı olan OpenStreetMap'in adres
    servisinden (Nominatim) otomatik alınır ve inşaatla
-   birlikte kaydedilir. Alınamazsa adres elle girilir;
-   şehir ve ilçe zorunludur, mahalle ve cadde değildir.
+   formdaki adres alanlarına yazılır. Kullanıcı bunları
+   değiştirebilir; adres alınamazsa elle girer. Şehir ve
+   ilçe zorunludur, mahalle ve cadde değildir.
 ================================================= */
 
 const GEOCODE_URL = 'https://nominatim.openstreetmap.org/reverse';
@@ -2417,92 +2423,204 @@ function formatAddress(address) {
 }
 
 const addressInfo = document.getElementById('addressInfo');
-const addressManual = document.getElementById('addressManual');
 const addrCity = document.getElementById('addrCity');
+const addrDistrict = document.getElementById('addrDistrict');
+const addrNeighbourhood = document.getElementById('addrNeighbourhood');
+const addrStreet = document.getElementById('addrStreet');
 
-/* Elle adres girişindeki şehir listesi */
-const PROVINCES = [
-    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya',
-    'Ankara', 'Antalya', 'Ardahan', 'Artvin', 'Aydın', 'Balıkesir',
-    'Bartın', 'Batman', 'Bayburt', 'Bilecik', 'Bingöl', 'Bitlis',
-    'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
-    'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan',
-    'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkâri',
-    'Hatay', 'Iğdır', 'Isparta', 'İstanbul', 'İzmir', 'Kahramanmaraş',
-    'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
-    'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya',
-    'Malatya', 'Manisa', 'Mardin', 'Mersin', 'Muğla', 'Muş',
-    'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize', 'Sakarya',
-    'Samsun', 'Şanlıurfa', 'Siirt', 'Sinop', 'Sivas', 'Şırnak',
-    'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van',
-    'Yalova', 'Yozgat', 'Zonguldak'
-];
+/*
+ * Türkiye'nin 81 ili ve 973 ilçesi (şehir -> ilçeler).
+ * Formdaki şehir ve ilçe listeleri buradan doldurulur.
+ */
+const DISTRICTS = {
+    "Adana": ["Aladağ", "Ceyhan", "Çukurova", "Feke", "İmamoğlu", "Karaisalı", "Karataş", "Kozan", "Pozantı", "Saimbeyli", "Sarıçam", "Seyhan", "Tufanbeyli", "Yumurtalık", "Yüreğir"],
+    "Adıyaman": ["Besni", "Çelikhan", "Gerger", "Gölbaşı", "Kahta", "Merkez", "Samsat", "Sincik", "Tut"],
+    "Afyonkarahisar": ["Başmakçı", "Bayat", "Bolvadin", "Çay", "Çobanlar", "Dazkırı", "Dinar", "Emirdağ", "Evciler", "Hocalar", "İhsaniye", "İscehisar", "Kızılören", "Merkez", "Sandıklı", "Sinanpaşa", "Sultandağı", "Şuhut"],
+    "Ağrı": ["Diyadin", "Doğubayazıt", "Eleşkirt", "Hamur", "Merkez", "Patnos", "Taşlıçay", "Tutak"],
+    "Aksaray": ["Ağaçören", "Eskil", "Gülağaç", "Güzelyurt", "Merkez", "Ortaköy", "Sarıyahşi", "Sultanhanı"],
+    "Amasya": ["Göynücek", "Gümüşhacıköy", "Hamamözü", "Merkez", "Merzifon", "Suluova", "Taşova"],
+    "Ankara": ["Akyurt", "Altındağ", "Ayaş", "Bala", "Beypazarı", "Çamlıdere", "Çankaya", "Çubuk", "Elmadağ", "Etimesgut", "Evren", "Gölbaşı", "Güdül", "Haymana", "Kahramankazan", "Kalecik", "Keçiören", "Kızılcahamam", "Mamak", "Nallıhan", "Polatlı", "Pursaklar", "Sincan", "Şereflikoçhisar", "Yenimahalle"],
+    "Antalya": ["Akseki", "Aksu", "Alanya", "Demre", "Döşemealtı", "Elmalı", "Finike", "Gazipaşa", "Gündoğmuş", "İbradı", "Kaş", "Kemer", "Kepez", "Konyaaltı", "Korkuteli", "Kumluca", "Manavgat", "Muratpaşa", "Serik"],
+    "Ardahan": ["Çıldır", "Damal", "Göle", "Hanak", "Merkez", "Posof"],
+    "Artvin": ["Ardanuç", "Arhavi", "Borçka", "Hopa", "Kemalpaşa", "Merkez", "Murgul", "Şavşat", "Yusufeli"],
+    "Aydın": ["Bozdoğan", "Buharkent", "Çine", "Didim", "Efeler", "Germencik", "İncirliova", "Karacasu", "Karpuzlu", "Koçarlı", "Köşk", "Kuşadası", "Kuyucak", "Nazilli", "Söke", "Sultanhisar", "Yenipazar"],
+    "Balıkesir": ["Altıeylül", "Ayvalık", "Balya", "Bandırma", "Bigadiç", "Burhaniye", "Dursunbey", "Edremit", "Erdek", "Gömeç", "Gönen", "Havran", "İvrindi", "Karesi", "Kepsut", "Manyas", "Marmara", "Savaştepe", "Sındırgı", "Susurluk"],
+    "Bartın": ["Amasra", "Kurucaşile", "Merkez", "Ulus"],
+    "Batman": ["Beşiri", "Gercüş", "Hasankeyf", "Kozluk", "Merkez", "Sason"],
+    "Bayburt": ["Aydıntepe", "Demirözü", "Merkez"],
+    "Bilecik": ["Bozüyük", "Gölpazarı", "İnhisar", "Merkez", "Osmaneli", "Pazaryeri", "Söğüt", "Yenipazar"],
+    "Bingöl": ["Adaklı", "Genç", "Karlıova", "Kiğı", "Merkez", "Solhan", "Yayladere", "Yedisu"],
+    "Bitlis": ["Adilcevaz", "Ahlat", "Güroymak", "Hizan", "Merkez", "Mutki", "Tatvan"],
+    "Bolu": ["Dörtdivan", "Gerede", "Göynük", "Kıbrıscık", "Mengen", "Merkez", "Mudurnu", "Seben", "Yeniçağa"],
+    "Burdur": ["Ağlasun", "Altınyayla", "Bucak", "Çavdır", "Çeltikçi", "Gölhisar", "Karamanlı", "Kemer", "Merkez", "Tefenni", "Yeşilova"],
+    "Bursa": ["Büyükorhan", "Gemlik", "Gürsu", "Harmancık", "İnegöl", "İznik", "Karacabey", "Keles", "Kestel", "Mudanya", "Mustafakemalpaşa", "Nilüfer", "Orhaneli", "Orhangazi", "Osmangazi", "Yenişehir", "Yıldırım"],
+    "Çanakkale": ["Ayvacık", "Bayramiç", "Biga", "Bozcaada", "Çan", "Eceabat", "Ezine", "Gelibolu", "Gökçeada", "Lapseki", "Merkez", "Yenice"],
+    "Çankırı": ["Atkaracalar", "Bayramören", "Çerkeş", "Eldivan", "Ilgaz", "Kızılırmak", "Korgun", "Kurşunlu", "Merkez", "Orta", "Şabanözü", "Yapraklı"],
+    "Çorum": ["Alaca", "Bayat", "Boğazkale", "Dodurga", "İskilip", "Kargı", "Laçin", "Mecitözü", "Merkez", "Oğuzlar", "Ortaköy", "Osmancık", "Sungurlu", "Uğurludağ"],
+    "Denizli": ["Acıpayam", "Babadağ", "Baklan", "Bekilli", "Beyağaç", "Bozkurt", "Buldan", "Çal", "Çameli", "Çardak", "Çivril", "Güney", "Honaz", "Kale", "Merkezefendi", "Pamukkale", "Sarayköy", "Serinhisar", "Tavas"],
+    "Diyarbakır": ["Bağlar", "Bismil", "Çermik", "Çınar", "Çüngüş", "Dicle", "Eğil", "Ergani", "Hani", "Hazro", "Kayapınar", "Kocaköy", "Kulp", "Lice", "Silvan", "Sur", "Yenişehir"],
+    "Düzce": ["Akçakoca", "Cumayeri", "Çilimli", "Gölyaka", "Gümüşova", "Kaynaşlı", "Merkez", "Yığılca"],
+    "Edirne": ["Enez", "Havsa", "İpsala", "Keşan", "Lalapaşa", "Meriç", "Merkez", "Süloğlu", "Uzunköprü"],
+    "Elazığ": ["Ağın", "Alacakaya", "Arıcak", "Baskil", "Karakoçan", "Keban", "Kovancılar", "Maden", "Merkez", "Palu", "Sivrice"],
+    "Erzincan": ["Çayırlı", "İliç", "Kemah", "Kemaliye", "Merkez", "Otlukbeli", "Refahiye", "Tercan", "Üzümlü"],
+    "Erzurum": ["Aşkale", "Aziziye", "Çat", "Hınıs", "Horasan", "İspir", "Karaçoban", "Karayazı", "Köprüköy", "Narman", "Oltu", "Olur", "Palandöken", "Pasinler", "Pazaryolu", "Şenkaya", "Tekman", "Tortum", "Uzundere", "Yakutiye"],
+    "Eskişehir": ["Alpu", "Beylikova", "Çifteler", "Günyüzü", "Han", "İnönü", "Mahmudiye", "Mihalgazi", "Mihalıççık", "Odunpazarı", "Sarıcakaya", "Seyitgazi", "Sivrihisar", "Tepebaşı"],
+    "Gaziantep": ["Araban", "İslahiye", "Karkamış", "Nizip", "Nurdağı", "Oğuzeli", "Şahinbey", "Şehitkamil", "Yavuzeli"],
+    "Giresun": ["Alucra", "Bulancak", "Çamoluk", "Çanakçı", "Dereli", "Doğankent", "Espiye", "Eynesil", "Görele", "Güce", "Keşap", "Merkez", "Piraziz", "Şebinkarahisar", "Tirebolu", "Yağlıdere"],
+    "Gümüşhane": ["Kelkit", "Köse", "Kürtün", "Merkez", "Şiran", "Torul"],
+    "Hakkari": ["Çukurca", "Derecik", "Merkez", "Şemdinli", "Yüksekova"],
+    "Hatay": ["Altınözü", "Antakya", "Arsuz", "Belen", "Defne", "Dörtyol", "Erzin", "Hassa", "İskenderun", "Kırıkhan", "Kumlu", "Payas", "Reyhanlı", "Samandağ", "Yayladağı"],
+    "Iğdır": ["Aralık", "Karakoyunlu", "Merkez", "Tuzluca"],
+    "Isparta": ["Aksu", "Atabey", "Eğirdir", "Gelendost", "Gönen", "Keçiborlu", "Merkez", "Senirkent", "Sütçüler", "Şarkikaraağaç", "Uluborlu", "Yalvaç", "Yenişarbademli"],
+    "İstanbul": ["Adalar", "Arnavutköy", "Ataşehir", "Avcılar", "Bağcılar", "Bahçelievler", "Bakırköy", "Başakşehir", "Bayrampaşa", "Beşiktaş", "Beykoz", "Beylikdüzü", "Beyoğlu", "Büyükçekmece", "Çatalca", "Çekmeköy", "Esenler", "Esenyurt", "Eyüpsultan", "Fatih", "Gaziosmanpaşa", "Güngören", "Kadıköy", "Kağıthane", "Kartal", "Küçükçekmece", "Maltepe", "Pendik", "Sancaktepe", "Sarıyer", "Silivri", "Sultanbeyli", "Sultangazi", "Şile", "Şişli", "Tuzla", "Ümraniye", "Üsküdar", "Zeytinburnu"],
+    "İzmir": ["Aliağa", "Balçova", "Bayındır", "Bayraklı", "Bergama", "Beydağ", "Bornova", "Buca", "Çeşme", "Çiğli", "Dikili", "Foça", "Gaziemir", "Güzelbahçe", "Karabağlar", "Karaburun", "Karşıyaka", "Kemalpaşa", "Kınık", "Kiraz", "Konak", "Menderes", "Menemen", "Narlıdere", "Ödemiş", "Seferihisar", "Selçuk", "Tire", "Torbalı", "Urla"],
+    "Kahramanmaraş": ["Afşin", "Andırın", "Çağlayancerit", "Dulkadiroğlu", "Ekinözü", "Elbistan", "Göksun", "Nurhak", "Onikişubat", "Pazarcık", "Türkoğlu"],
+    "Karabük": ["Eflani", "Eskipazar", "Merkez", "Ovacık", "Safranbolu", "Yenice"],
+    "Karaman": ["Ayrancı", "Başyayla", "Ermenek", "Kazımkarabekir", "Merkez", "Sarıveliler"],
+    "Kars": ["Akyaka", "Arpaçay", "Digor", "Kağızman", "Merkez", "Sarıkamış", "Selim", "Susuz"],
+    "Kastamonu": ["Abana", "Ağlı", "Araç", "Azdavay", "Bozkurt", "Cide", "Çatalzeytin", "Daday", "Devrekani", "Doğanyurt", "Hanönü", "İhsangazi", "İnebolu", "Küre", "Merkez", "Pınarbaşı", "Seydiler", "Şenpazar", "Taşköprü", "Tosya"],
+    "Kayseri": ["Akkışla", "Bünyan", "Develi", "Felahiye", "Hacılar", "İncesu", "Kocasinan", "Melikgazi", "Özvatan", "Pınarbaşı", "Sarıoğlan", "Sarız", "Talas", "Tomarza", "Yahyalı", "Yeşilhisar"],
+    "Kırıkkale": ["Bahşılı", "Balışeyh", "Çelebi", "Delice", "Karakeçili", "Keskin", "Merkez", "Sulakyurt", "Yahşihan"],
+    "Kırklareli": ["Babaeski", "Demirköy", "Kofçaz", "Lüleburgaz", "Merkez", "Pehlivanköy", "Pınarhisar", "Vize"],
+    "Kırşehir": ["Akçakent", "Akpınar", "Boztepe", "Çiçekdağı", "Kaman", "Merkez", "Mucur"],
+    "Kilis": ["Elbeyli", "Merkez", "Musabeyli", "Polateli"],
+    "Kocaeli": ["Başiskele", "Çayırova", "Darıca", "Derince", "Dilovası", "Gebze", "Gölcük", "İzmit", "Kandıra", "Karamürsel", "Kartepe", "Körfez"],
+    "Konya": ["Ahırlı", "Akören", "Akşehir", "Altınekin", "Beyşehir", "Bozkır", "Cihanbeyli", "Çeltik", "Çumra", "Derbent", "Derebucak", "Doğanhisar", "Emirgazi", "Ereğli", "Güneysınır", "Hadim", "Halkapınar", "Hüyük", "Ilgın", "Kadınhanı", "Karapınar", "Karatay", "Kulu", "Meram", "Sarayönü", "Selçuklu", "Seydişehir", "Taşkent", "Tuzlukçu", "Yalıhüyük", "Yunak"],
+    "Kütahya": ["Altıntaş", "Aslanapa", "Çavdarhisar", "Domaniç", "Dumlupınar", "Emet", "Gediz", "Hisarcık", "Merkez", "Pazarlar", "Simav", "Şaphane", "Tavşanlı"],
+    "Malatya": ["Akçadağ", "Arapgir", "Arguvan", "Battalgazi", "Darende", "Doğanşehir", "Doğanyol", "Hekimhan", "Kale", "Kuluncak", "Pütürge", "Yazıhan", "Yeşilyurt"],
+    "Manisa": ["Ahmetli", "Akhisar", "Alaşehir", "Demirci", "Gölmarmara", "Gördes", "Kırkağaç", "Köprübaşı", "Kula", "Salihli", "Sarıgöl", "Saruhanlı", "Selendi", "Soma", "Şehzadeler", "Turgutlu", "Yunusemre"],
+    "Mardin": ["Artuklu", "Dargeçit", "Derik", "Kızıltepe", "Mazıdağı", "Midyat", "Nusaybin", "Ömerli", "Savur", "Yeşilli"],
+    "Mersin": ["Akdeniz", "Anamur", "Aydıncık", "Bozyazı", "Çamlıyayla", "Erdemli", "Gülnar", "Mezitli", "Mut", "Silifke", "Tarsus", "Toroslar", "Yenişehir"],
+    "Muğla": ["Bodrum", "Dalaman", "Datça", "Fethiye", "Kavaklıdere", "Köyceğiz", "Marmaris", "Menteşe", "Milas", "Ortaca", "Seydikemer", "Ula", "Yatağan"],
+    "Muş": ["Bulanık", "Hasköy", "Korkut", "Malazgirt", "Merkez", "Varto"],
+    "Nevşehir": ["Acıgöl", "Avanos", "Derinkuyu", "Gülşehir", "Hacıbektaş", "Kozaklı", "Merkez", "Ürgüp"],
+    "Niğde": ["Altunhisar", "Bor", "Çamardı", "Çiftlik", "Merkez", "Ulukışla"],
+    "Ordu": ["Akkuş", "Altınordu", "Aybastı", "Çamaş", "Çatalpınar", "Çaybaşı", "Fatsa", "Gölköy", "Gülyalı", "Gürgentepe", "İkizce", "Kabadüz", "Kabataş", "Korgan", "Kumru", "Mesudiye", "Perşembe", "Ulubey", "Ünye"],
+    "Osmaniye": ["Bahçe", "Düziçi", "Hasanbeyli", "Kadirli", "Merkez", "Sumbas", "Toprakkale"],
+    "Rize": ["Ardeşen", "Çamlıhemşin", "Çayeli", "Derepazarı", "Fındıklı", "Güneysu", "Hemşin", "İkizdere", "İyidere", "Kalkandere", "Merkez", "Pazar"],
+    "Sakarya": ["Adapazarı", "Akyazı", "Arifiye", "Erenler", "Ferizli", "Geyve", "Hendek", "Karapürçek", "Karasu", "Kaynarca", "Kocaali", "Pamukova", "Sapanca", "Serdivan", "Söğütlü", "Taraklı"],
+    "Samsun": ["19 Mayıs", "Alaçam", "Asarcık", "Atakum", "Ayvacık", "Bafra", "Canik", "Çarşamba", "Havza", "İlkadım", "Kavak", "Ladik", "Salıpazarı", "Tekkeköy", "Terme", "Vezirköprü", "Yakakent"],
+    "Siirt": ["Baykan", "Eruh", "Kurtalan", "Merkez", "Pervari", "Şirvan", "Tillo"],
+    "Sinop": ["Ayancık", "Boyabat", "Dikmen", "Durağan", "Erfelek", "Gerze", "Merkez", "Saraydüzü", "Türkeli"],
+    "Sivas": ["Akıncılar", "Altınyayla", "Divriği", "Doğanşar", "Gemerek", "Gölova", "Gürün", "Hafik", "İmranlı", "Kangal", "Koyulhisar", "Merkez", "Suşehri", "Şarkışla", "Ulaş", "Yıldızeli", "Zara"],
+    "Şanlıurfa": ["Akçakale", "Birecik", "Bozova", "Ceylanpınar", "Eyyübiye", "Halfeti", "Haliliye", "Harran", "Hilvan", "Karaköprü", "Siverek", "Suruç", "Viranşehir"],
+    "Şırnak": ["Beytüşşebap", "Cizre", "Güçlükonak", "İdil", "Merkez", "Silopi", "Uludere"],
+    "Tekirdağ": ["Çerkezköy", "Çorlu", "Ergene", "Hayrabolu", "Kapaklı", "Malkara", "Marmaraereğlisi", "Muratlı", "Saray", "Süleymanpaşa", "Şarköy"],
+    "Tokat": ["Almus", "Artova", "Başçiftlik", "Erbaa", "Merkez", "Niksar", "Pazar", "Reşadiye", "Sulusaray", "Turhal", "Yeşilyurt", "Zile"],
+    "Trabzon": ["Akçaabat", "Araklı", "Arsin", "Beşikdüzü", "Çarşıbaşı", "Çaykara", "Dernekpazarı", "Düzköy", "Hayrat", "Köprübaşı", "Maçka", "Of", "Ortahisar", "Sürmene", "Şalpazarı", "Tonya", "Vakfıkebir", "Yomra"],
+    "Tunceli": ["Çemişgezek", "Hozat", "Mazgirt", "Merkez", "Nazımiye", "Ovacık", "Pertek", "Pülümür"],
+    "Uşak": ["Banaz", "Eşme", "Karahallı", "Merkez", "Sivaslı", "Ulubey"],
+    "Van": ["Bahçesaray", "Başkale", "Çaldıran", "Çatak", "Edremit", "Erciş", "Gevaş", "Gürpınar", "İpekyolu", "Muradiye", "Özalp", "Saray", "Tuşba"],
+    "Yalova": ["Altınova", "Armutlu", "Çınarcık", "Çiftlikköy", "Merkez", "Termal"],
+    "Yozgat": ["Akdağmadeni", "Aydıncık", "Boğazlıyan", "Çandır", "Çayıralan", "Çekerek", "Kadışehri", "Merkez", "Saraykent", "Sarıkaya", "Sorgun", "Şefaatli", "Yenifakılı", "Yerköy"],
+    "Zonguldak": ["Alaplı", "Çaycuma", "Devrek", "Ereğli", "Gökçebey", "Kilimli", "Kozlu", "Merkez"]
+};
 
-PROVINCES.forEach(name => {
+Object.keys(DISTRICTS).forEach(name => {
     const option = document.createElement('option');
     option.value = name;
     option.textContent = name;
     addrCity.appendChild(option);
 });
 
-/* Elle giriş açık mı? */
-function manualAddressShown() {
-    return addressManual.style.display === 'block';
+/* İlçe listesini seçilen şehre göre doldurur. */
+function fillDistricts(city, selected) {
+
+    addrDistrict.textContent = '';
+
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = city ? 'İlçe (zorunlu)' : 'Önce şehir seç';
+    addrDistrict.appendChild(first);
+
+    (DISTRICTS[city] || []).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        addrDistrict.appendChild(option);
+    });
+
+    addrDistrict.value = selected || '';
 }
 
-/* Elle adres girişini açar; otomatik bulunan kısımlar doldurulur. */
-function showManualAddress(found) {
+addrCity.addEventListener('change', () => {
 
-    /* Bulunan şehir listede yoksa listeye eklenir. */
-    if (found.city && !PROVINCES.includes(found.city)) {
-        const option = document.createElement('option');
-        option.value = found.city;
-        option.textContent = found.city;
-        addrCity.appendChild(option);
+    fillDistricts(addrCity.value, '');
+
+    /* Şehir değiştiyse eski mahalle ve cadde artık geçersizdir. */
+    addrNeighbourhood.value = '';
+    addrStreet.value = '';
+});
+
+/* Kullanıcı adres alanlarına dokunduysa otomatik adres üstüne yazmaz. */
+let addressTouched = false;
+
+[addrCity, addrDistrict, addrNeighbourhood, addrStreet].forEach(field => {
+
+    ['input', 'change'].forEach(name => {
+        field.addEventListener(name, () => {
+            addressTouched = true;
+        });
+    });
+});
+
+/* Karşılaştırma için: küçük harf, şapkasız ("Hakkâri" = "Hakkari") */
+function plainName(text) {
+
+    return (text || '').toLocaleLowerCase('tr')
+        .replace(/â/g, 'a').replace(/î/g, 'i').replace(/û/g, 'u')
+        .trim();
+}
+
+/* Listede aynı adı bulur; yoksa boş döner. */
+function matchName(list, name) {
+
+    const wanted = plainName(name);
+
+    return wanted
+        ? list.find(item => plainName(item) === wanted) || ''
+        : '';
+}
+
+/* Otomatik bulunan adresi alanlara yazar. */
+function setAddressFields(found) {
+
+    const city = matchName(Object.keys(DISTRICTS), found.city);
+    const districts = DISTRICTS[city] || [];
+
+    let district = matchName(districts, found.district);
+
+    /* "Çanakkale Merkez" ya da şehirle aynı ad -> "Merkez" */
+    if (!district && found.district) {
+
+        const plain = plainName(found.district);
+
+        if (plain.includes('merkez') || plain === plainName(city))
+            district = matchName(districts, 'Merkez');
     }
 
-    addrCity.value = found.city || '';
+    addrCity.value = city;
+    fillDistricts(city, district);
 
-    document.getElementById('addrDistrict').value = found.district || '';
-    document.getElementById('addrNeighbourhood').value = found.neighbourhood || '';
-    document.getElementById('addrStreet').value = found.street || '';
-
-    addressManual.style.display = 'block';
-
-    addressInfo.textContent =
-        '📍 Konum bilgisi alınamadı. Lütfen şehir ve ilçeyi girin.';
+    addrNeighbourhood.value = found.neighbourhood || '';
+    addrStreet.value = found.street || '';
 }
 
-function hideManualAddress() {
-
-    addressManual.style.display = 'none';
-
+function clearAddressFields() {
     addrCity.value = '';
-
-    document.getElementById('addrDistrict').value = '';
-    document.getElementById('addrNeighbourhood').value = '';
-    document.getElementById('addrStreet').value = '';
+    fillDistricts('', '');
+    addrNeighbourhood.value = '';
+    addrStreet.value = '';
 }
 
-/* "kadıköy" -> "Kadıköy" (Türkçe harflere uygun) */
-function titleCase(text) {
-
-    return text.trim().split(/\s+/).filter(Boolean)
-        .map(word =>
-            word.charAt(0).toLocaleUpperCase('tr') +
-            word.slice(1).toLocaleLowerCase('tr')
-        )
-        .join(' ');
-}
-
-/* Elle girilen adresi okur; boş alanlar yazılmaz. */
-function readManualAddress() {
+/* Alanlardaki adresi okur; boş alanlar kayda yazılmaz. */
+function readAddressFields() {
 
     const address = {
         city: addrCity.value,
-        district: titleCase(document.getElementById('addrDistrict').value),
-        neighbourhood: document.getElementById('addrNeighbourhood').value.trim(),
-        street: document.getElementById('addrStreet').value.trim()
+        district: addrDistrict.value,
+        neighbourhood: addrNeighbourhood.value.trim(),
+        street: addrStreet.value.trim()
     };
 
     Object.keys(address).forEach(key => {
@@ -2518,7 +2636,7 @@ function addressComplete(address) {
     return !!(address.city && address.district);
 }
 
-/* Formdaki noktanın adresi (henüz gelmemiş olabilir) */
+/* Formdaki noktanın otomatik adresi (henüz gelmemiş olabilir) */
 let addressPromise = Promise.resolve({});
 
 function startAddressLookup(lngLat) {
@@ -2526,25 +2644,28 @@ function startAddressLookup(lngLat) {
     const lookup = lookupAddress(lngLat);
 
     addressPromise = lookup;
+    addressTouched = false;
+
+    clearAddressFields();
+
     addressInfo.textContent = '📍 Konum bilgisi alınıyor…';
 
-    hideManualAddress();
-
-    lookup.then(address => {
+    lookup.then(found => {
 
         /* Bu arada başka bir nokta seçildiyse ya da form kapandıysa yazma. */
         if (addressPromise !== lookup)
             return;
 
-        /* Şehir ya da ilçe bulunamadıysa elle girilir. */
-        if (!addressComplete(address)) {
-            showManualAddress(address);
-            return;
-        }
+        if (!addressTouched)
+            setAddressFields(found);
 
-        addressInfo.textContent = '📍 ' + formatAddress(address);
+        addressInfo.textContent = addressComplete(readAddressFields())
+            ? '📍 Konum otomatik bulundu. Yanlışsa değiştirebilirsin.'
+            : '📍 Konum bilgisi alınamadı. Lütfen şehir ve ilçeyi seç.';
     });
 }
+
+clearAddressFields();
 
 
 /* =================================================
@@ -2811,45 +2932,32 @@ addBtn.addEventListener(
 
         /*
          * KONUM BİLGİSİ
-         * Otomatik adres en fazla 5 saniye beklenir. Şehir ya da
-         * ilçe yoksa elle giriş açılır ve kayıt yapılmaz.
+         * Adres formdaki alanlardan okunur (otomatik bulunan ya da
+         * elle düzeltilen). Otomatik adres henüz gelmediyse en fazla
+         * 5 saniye beklenir. Şehir ve ilçe zorunludur.
          */
-        function stopSaving(message) {
-            saving = false;
-            addBtn.disabled = false;
-            addBtn.textContent = 'Ekle';
-            alert(message);
-        }
+        let address = readAddressFields();
 
-        let address;
-
-        if (manualAddressShown()) {
-
-            address = readManualAddress();
-
-            if (!addressComplete(address)) {
-                stopSaving('Lütfen şehir ve ilçeyi girin.');
-                return;
-            }
-
-        } else {
+        if (!addressComplete(address) && !addressTouched) {
 
             addBtn.textContent = 'Konum bilgisi bekleniyor…';
 
-            address = await Promise.race([
+            await Promise.race([
                 lookup,
-                new Promise(resolve => setTimeout(() => resolve({}), 5000))
+                new Promise(resolve => setTimeout(resolve, 5000))
             ]);
 
-            if (!addressComplete(address)) {
+            address = readAddressFields();
+        }
 
-                /* Form bu arada kapatılmadıysa elle girişi aç. */
-                if (selectedLngLat)
-                    showManualAddress(address);
+        if (!addressComplete(address)) {
 
-                stopSaving('Konum bilgisi alınamadı. Lütfen şehir ve ilçeyi girin.');
-                return;
-            }
+            saving = false;
+            addBtn.disabled = false;
+            addBtn.textContent = 'Ekle';
+
+            alert('Lütfen şehir ve ilçeyi seçin.');
+            return;
         }
 
         /* Kimlik önce üretilir; resimler de aynı adla kaydedilir. */
@@ -2996,8 +3104,9 @@ function resetPanel() {
 
     addressPromise = Promise.resolve({});
     addressInfo.textContent = '';
+    addressTouched = false;
 
-    hideManualAddress();
+    clearAddressFields();
 
     renderThumbs();
 }
