@@ -24,9 +24,6 @@
 
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css">
 
-<!-- Alt menünün yazı tipi -->
-<!-- Sadece menüde geçen harfler indirilir ("Ana Sayfa", "Harita") -->
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&text=AnaSyfHrit%20&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
 
 <style>
@@ -56,6 +53,27 @@ html, body {
     inset: 0;
 }
 
+/*
+ * HARİTA KATMANI
+ * Harita ve üzerindeki düğmeler bu katmanın içindedir. Katman ana
+ * sayfanın üstünde durur: harita açılırken alttan yukarı kayarak
+ * gelir, kapanırken aşağı kayarak gider.
+ */
+#mapLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 18;
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform .32s ease, visibility 0s linear .32s;
+}
+
+body[data-tab="map"] #mapLayer {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform .32s ease, visibility 0s;
+}
+
 /* -----------------------------
    ALT PANELLER
    panel       : inşaat ekleme formu
@@ -70,8 +88,6 @@ html, body {
     bottom: 20px;
     transform: translateX(-50%);
     width: min(92%, 400px);
-    max-height: calc(100% - 40px);
-    overflow-y: auto;
     background: white;
     border-radius: 18px;
     padding: 18px;
@@ -319,13 +335,13 @@ body.show-place-labels .place-label {
 ----------------------------- */
 
 .popup-content {
-    width: 190px;
+    width: 12em;
     cursor: pointer;
 }
 
 .popup-content img {
     width: 100%;
-    height: 96px;
+    height: 8em;
     object-fit: cover;
     border-radius: 8px;
     margin-bottom: 8px;
@@ -345,32 +361,9 @@ body.show-place-labels .place-label {
     margin-top: 2px;
 }
 
-.popup-hint {
-    font-size: 12px;
-    color: #1a73e8;
-    margin-top: 6px;
-}
-
-/*
- * Küçük kutunun kapatma (×) düğmesi: resmin üstünde değil,
- * kutunun sağ üst köşesinde kendi satırında durur ve büyüktür.
- */
+/* Küçük kutuda kapatma düğmesi yoktur. */
 .maplibregl-popup-content {
-    padding: 36px 10px 12px;
-}
-
-.maplibregl-popup-close-button {
-    flex: none;
-    top: 0;
-    right: 0;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    font-size: 26px;
-    font-weight: normal;
-    line-height: 36px;
-    color: #333;
-    border-radius: 0 3px 0 10px;
+    padding: 10px 10px 12px;
 }
 
 /* -----------------------------
@@ -434,12 +427,6 @@ body.show-place-labels .place-label {
     background: #111;
 }
 
-/* Resimsiz kayıt: resim alanı sadece düğmelerin sığacağı kadar */
-#detailSheet.no-images #detailGallery {
-    height: 64px;
-    background: #2b2f3a;
-}
-
 #detailImages {
     display: flex;
     height: 100%;
@@ -498,11 +485,74 @@ body.show-place-labels .place-label {
     border-radius: 10px;
 }
 
+/*
+ * RESMİN ALTINDAKİ BÖLÜM (başlık + sekmeler + içerik)
+ * Başlığından tutulup yukarı çekilince resmin üzerine biner;
+ * en fazla resimdeki okların hemen altına kadar çıkar.
+ * --lift: ne kadar yukarı çekildiği.
+ */
+#detailPanel {
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: calc(-1 * var(--lift, 0px));
+    background: white;
+}
+
+#detailHead {
+    flex: none;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Tutma çizgisi */
+#detailGrip {
+    width: 2.6em;
+    height: .3em;
+    margin: .55em auto 0;
+    border-radius: 1em;
+    background: #cfd3da;
+}
+
 #detailTitle {
     flex: none;
-    margin: 14px 18px 8px;
+    margin: 8px 18px 8px;
     font-size: 20px;
     overflow-wrap: anywhere;
+}
+
+/* Bilgiler sekmesinin altındaki "Yükleyen" bölümü */
+#detailUploader {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.detail-section {
+    font-size: 13px;
+    font-weight: bold;
+    color: #777;
+    margin-bottom: 10px;
+}
+
+/* Konum sekmesi: sadece bu inşaatı gösteren küçük harita */
+/* Konum haritasındaki atıf yazısı küçüktür. */
+#detailMap .maplibregl-ctrl-attrib {
+    font-size: 10px;
+}
+
+#detailMap {
+    width: 100%;
+    height: 100%;
+    min-height: 12em;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #e9ebef;
 }
 
 #detailTabs {
@@ -526,18 +576,40 @@ body.show-place-labels .place-label {
     border-bottom-color: #28a745;
 }
 
+/*
+ * SEKME SAYFALARI
+ * Üç sayfa yan yana durur; şerit (track) sağa sola kayarak
+ * seçili sayfayı gösterir. Her sayfa kendi içinde aşağı kayar.
+ */
 #detailBody {
     flex: 1;
-    overflow-y: auto;
-    padding: 16px 18px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#detailTrack {
+    display: flex;
+    width: 300%;
+    height: 100%;
+    transition: transform .28s ease;
+    will-change: transform;
+}
+
+/* Parmak ekrandayken şerit parmağı gecikmesiz izler. */
+#detailTrack.dragging {
+    transition: none;
 }
 
 .tab-page {
-    display: none;
-}
+    flex: none;
+    box-sizing: border-box;
+    width: calc(100% / 3);
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px 18px;
 
-.tab-page.active {
-    display: block;
+    /* Yukarı aşağı kaydırma tarayıcıda, sağa sola kaydırma bizde. */
+    touch-action: pan-y;
 }
 
 .tab-empty {
@@ -565,13 +637,11 @@ body.show-place-labels .place-label {
 }
 
 /* -----------------------------
-   ALT MENÜ
-   Ana Sayfa / Harita arasında geçiş. Ortadaki mavi
-   düğme menüyü açıp kapatır. Tasarım alt-menu.html
-   dosyasından alındı; buraya uyarlanan yerler:
-   z-index (form ve ayrıntı sayfasının altında kalsın),
-   düğmenin iç boşluğu, okun yönü ve mavi düğmenin
-   boyutu (86 yerine 72 piksel).
+   ALT DÜĞME
+   Ekranın altında tek bir mavi düğme. Ana sayfadayken
+   oku yukarı bakar: basınca harita alttan açılır.
+   Haritadayken oku aşağı bakar: basınca harita aşağı
+   kapanır ve ana sayfaya dönülür.
 ----------------------------- */
 
 .alt-menu {
@@ -581,96 +651,13 @@ body.show-place-labels .place-label {
     /* Ekranın altına yakın; telefonun alt çubuğu varsa onun üstünde. */
     bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
-    width: 300px;
-    height: 126px;               /* kapsül 78 + butonun taşan kısmı 48 */
-    filter: drop-shadow(0 8px 18px rgba(60, 80, 140, .14));
     z-index: 19;
-    font-family: 'Nunito', -apple-system, 'Segoe UI', Roboto, sans-serif;
-
-    /* Menünün boş köşeleri haritaya tıklamayı engellemesin. */
-    pointer-events: none;
 }
 
-.alt-menu .kapsul,
-.alt-menu .ac-kapa {
-    pointer-events: auto;
-}
-
-/* Beyaz kapsül */
-.kapsul {
-    position: relative;
-    height: 78px;
-    padding: 8px;
-    display: flex;
-    justify-content: space-between;
-    background: #fff;
-    border-radius: 39px;
-    transform-origin: 50% 100%;
-    transition: transform .35s cubic-bezier(.34, 1.4, .64, 1), opacity .25s ease;
-}
-
-/* Kapsül ile yuvarlak butonu yumuşakça birleştiren kavisler */
-.kapsul::before,
-.kapsul::after {
-    content: '';
-    position: absolute;
-    top: calc(100% - 0.5px);
-    width: 18px;
-    height: 14px;
-    pointer-events: none;
-}
-
-.kapsul::before {
-    left: calc(50% - 50px);
-    background: radial-gradient(circle at 0 100%, transparent 14px, #fff 14.5px);
-}
-
-.kapsul::after {
-    left: calc(50% + 32px);
-    background: radial-gradient(circle at 100% 100%, transparent 14px, #fff 14.5px);
-}
-
-/* Menü öğeleri */
-.oge {
-    width: 130px;
-    height: 62px;
-    border: none;
-    border-radius: 31px;
-    background: #f0f1f5;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 800;
-    color: #2b2f3a;
-    text-decoration: none;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background .2s ease, transform .15s ease;
-}
-
-.oge:hover  { background: #e6e9f2; }
-.oge:active { transform: scale(.96); }
-.oge.aktif  { background: #e3edff; color: #1f6ff2; }
-.oge:focus-visible { outline: 3px solid #9cc2ff; outline-offset: 2px; }
-
-.oge .ikon {
-    font-size: 24px;
-    line-height: 1;
-}
-
-/* Ortadaki mavi buton */
 .ac-kapa {
-    position: absolute;
-    left: 50%;
-    top: 54px;
     flex: none;
     width: 72px;
     height: 72px;
-    margin-left: -36px;
     padding: 0;
     border: 5px solid #fff;
     border-radius: 50%;
@@ -688,28 +675,15 @@ body.show-place-labels .place-label {
 .ac-kapa:active { transform: scale(.94); }
 .ac-kapa:focus-visible { outline: 3px solid #9cc2ff; outline-offset: 3px; }
 
-/*
- * Ok: menü açıkken aşağı bakar (basınca kapanır),
- * kapalıyken yukarı bakar (basınca açılır).
- */
 .ac-kapa svg {
     width: 26px;
     height: 26px;
-    transform: rotate(180deg);
     transition: transform .3s ease;
 }
 
-/* Kapalı durum */
-.alt-menu.kapali .kapsul {
-    transform: scale(.2);
-    opacity: 0;
-    pointer-events: none;
-}
-
-.alt-menu.kapali .ac-kapa svg { transform: rotate(0deg); }
-
-@media (max-width: 340px) {
-    .alt-menu { transform: translateX(-50%) scale(.9); transform-origin: 50% 100%; }
+/* Harita açıkken ok aşağı bakar. */
+body[data-tab="map"] .ac-kapa svg {
+    transform: rotate(180deg);
 }
 
 /* Menü düğmesi: ana sayfada "Son eklenenler" başlığının sağında */
@@ -725,7 +699,7 @@ body.show-place-labels .place-label {
 
 /* -----------------------------
    ANA SAYFA
-   Haritanın üzerinde durur; Harita sekmesinde gizlenir.
+   Hep yerinde durur; harita açılınca harita katmanı üzerine gelir.
 ----------------------------- */
 
 #homePage {
@@ -736,12 +710,8 @@ body.show-place-labels .place-label {
     bottom: 0;
     z-index: 18;
     background: #f4f5f7;
-    display: none;
-    flex-direction: column;
-}
-
-body[data-tab="home"] #homePage {
     display: flex;
+    flex-direction: column;
 }
 
 #homeMenu {
@@ -789,7 +759,11 @@ body[data-tab="home"] #homePage {
 #homeMain {
     flex: 1;
     overflow-y: auto;
-    /* Alttaki boşluk: son kart alt menünün arkasında kalmasın. */
+    overflow-x: hidden;
+
+    /* Yukarı aşağı kaydırma tarayıcıda, sağa sola kaydırma bizde. */
+    touch-action: pan-y;
+    /* Alttaki boşluk: son kart alttaki düğmenin arkasında kalmasın. */
     padding: 12px var(--side-gap) 180px;
 }
 
@@ -828,81 +802,70 @@ body[data-tab="home"] #homePage {
 }
 
 /*
- * "Son eklenenler / Filtrele" seçimi: basınca aşağı doğru
- * açılan küçük bir menü. Bir seçeneğe ya da başka bir yere
- * basınca kapanır.
+ * ÜST DÜĞMELER: Son eklenenler / Filtrele / Harita
+ * Yan yana üç düğme. Yazı boyutu ekran genişliğine bağlıdır;
+ * dar telefonlarda da tek satıra sığar.
  */
 #homeModeBox {
-    position: relative;
+    display: flex;
+    gap: .45em;
+    min-width: 0;
+    font-size: min(16px, 3.6vw);
 }
 
 #homeModeBox[hidden] {
     display: none;
 }
 
-#homeModeBtn {
+#homeModeBox button {
     flex: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    padding: .5em .7em;
     border: 1px solid #d5d8de;
     border-radius: 10px;
     background: white;
-    font-size: 16px;
+    font-size: inherit;
     font-weight: bold;
     color: #444;
+    white-space: nowrap;
 }
 
-#homeModeBtn .caret {
-    font-size: 13px;
-    color: #777;
+/* "Filtrele" ve "Harita" kısa yazılı olduğu için biraz genişletilir. */
+#homeModeBox button[data-mode="filter"],
+#homeMapBtn {
+    min-width: 5.5em;
+}
+
+/* Seçili olan mavi görünür */
+#homeModeBox button.active {
+    border-color: #1a73e8;
+    background: #eef4ff;
+    color: #1a73e8;
+}
+
+/*
+ * Ana sayfada yana kaydırırken filtre kutusu ve liste parmağı izler.
+ * --swipe-x: ne kadar yana çekildiği.
+ */
+#filterBox,
+#homeList {
+    transform: translateX(var(--swipe-x, 0px));
     transition: transform .2s ease;
 }
 
-#homeModeBox.open .caret {
-    transform: rotate(180deg);
+/* Açılan işaret kutulu liste alttaki kartların üstünde kalsın. */
+#filterBox {
+    position: relative;
+    z-index: 2;
 }
 
-#homeModeMenu {
-    display: none;
-    position: absolute;
-    left: 0;
-    top: calc(100% + 4px);
-    z-index: 3;
-    min-width: 100%;
-    flex-direction: column;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 5px 25px rgba(0,0,0,.25);
-    overflow: hidden;
+#homeMain.swiping #filterBox,
+#homeMain.swiping #homeList {
+    transition: none;
 }
 
-#homeModeBox.open #homeModeMenu {
-    display: flex;
-}
-
-#homeModeMenu button {
-    flex: none;
-    padding: 13px 16px;
-    border-radius: 0;
-    border-bottom: 1px solid #eee;
-    background: none;
-    text-align: left;
-    white-space: nowrap;
-    font-size: 15px;
-    font-weight: normal;
-    color: #222;
-}
-
-#homeModeMenu button:last-child {
-    border-bottom: 0;
-}
-
-/* Seçili olan mavi ve kalın görünür */
-#homeModeMenu button.active {
-    color: #1a73e8;
-    font-weight: bold;
+/* Haritadaki panele taşınan filtre kutusu kaymaz. */
+#mapFilterSlot #filterBox {
+    transform: none;
 }
 
 /* YÜKLENİYOR (kayıtlar gelene kadar ekranın ortasında) */
@@ -951,6 +914,105 @@ body[data-tab="home"] #homePage {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    align-items: start;
+}
+
+/*
+ * ÇOKLU SEÇİM (ilçe ve tür)
+ * Düğmeye basınca altında işaret kutulu liste açılır;
+ * birden fazla seçenek işaretlenebilir.
+ */
+.multi {
+    min-width: 0;
+}
+
+.multi-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4em;
+    width: 100%;
+    padding: 9px 8px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: normal;
+    color: inherit;
+    text-align: left;
+}
+
+.multi-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.multi-arrow {
+    flex: none;
+    font-size: .8em;
+    color: #666;
+    transition: transform .15s;
+}
+
+.multi.open .multi-arrow {
+    transform: rotate(180deg);
+}
+
+.multi.selected .multi-btn {
+    border-color: #1a73e8;
+}
+
+.multi-anchor {
+    position: relative;
+}
+
+/* Liste alttakileri itmez, üzerlerine biner. */
+.multi-list {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + .3em);
+    z-index: 6;
+    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    max-height: 13em;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: white;
+}
+
+.multi.open .multi-list {
+    display: block;
+}
+
+.multi-list label {
+    display: flex;
+    align-items: center;
+    gap: .5em;
+    padding: .55em .6em;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.multi-list label + label {
+    border-top: 1px solid #f0f0f0;
+}
+
+.multi-list input {
+    flex: none;
+    width: 1.15em;
+    height: 1.15em;
+    margin: 0;
+    accent-color: #1a73e8;
+}
+
+.multi-list span {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .filter-grid label {
@@ -967,78 +1029,96 @@ body[data-tab="home"] #homePage {
     font-size: 15px;
 }
 
-#filterFooter {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+#filterCount {
+    display: block;
     margin-top: 10px;
     font-size: 13px;
     color: #666;
 }
 
-.filter-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-#filterApplyBtn,
-#filterClearBtn {
-    flex: none;
-    padding: 8px 14px;
-    font-size: 13px;
-    color: white;
-}
-
-#filterApplyBtn {
-    background: #1a73e8;
+#filterCount:empty {
+    display: none;
 }
 
 /*
- * Bir seçim varken mor "Temizle"; yokken kırmızı "Kapat".
- * Yazı değişince düğme oynamasın diye genişliği sabittir;
- * piksel yerine yazı boyutuna bağlı (em) verildiği için
- * her ekranda orantılı kalır. "Uygula"dan biraz geniştir.
+ * Üç düğme satırı eşit paylaşır: genişlikleri hep aynıdır
+ * ve ekran genişliğiyle birlikte orantılı değişir.
  */
-#filterApplyBtn,
-#filterClearBtn {
-    box-sizing: border-box;
-    padding-left: 0;
-    padding-right: 0;
+.filter-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.filter-buttons button {
+    min-width: 0;
+    padding: 10px 0;
+    font-size: 14px;
+    color: white;
     text-align: center;
     white-space: nowrap;
-    overflow: hidden;
 }
 
 #filterApplyBtn {
-    flex: 0 0 5.6em;
-    width: 5.6em;
-    min-width: 5.6em;
-    max-width: 5.6em;
+    background: #1e8e3e;
 }
 
 #filterClearBtn {
-    flex: 0 0 6.4em;
-    width: 6.4em;
-    min-width: 6.4em;
-    max-width: 6.4em;
-    background: #7b3fe4;
+    background: #1a73e8;
 }
 
-#filterClearBtn.close-mode {
+#filterCloseBtn {
     background: #d93025;
 }
 
-/* Resimsiz kayıtların karttaki yer tutucusu */
-.home-card-noimg {
+/*
+ * RESİM YOK GÖRSELİ
+ * Resimsiz kayıtlarda resmin yerinde durur: üstü çizili
+ * resim simgesi ve altında "Resim yok" yazısı.
+ */
+.no-image {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .35em;
+    background: #e9ebef;
+    color: #8a909c;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.1;
+}
+
+.no-image svg {
+    width: 2.6em;
+    height: 2.6em;
+}
+
+/* Ana sayfadaki kartta */
+.home-card .no-image {
     flex: none;
     width: 88px;
     height: 56px;
     border-radius: 8px;
-    background: #e9ebef;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
+    font-size: 10px;
+    gap: .2em;
+}
+
+/* Haritadaki küçük kutuda */
+.popup-content .no-image {
+    width: 100%;
+    height: 8em;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+/* Ayrıntı sayfasında resimlerin yerinde */
+#detailImages .no-image {
+    flex: none;
+    width: 100%;
+    height: 100%;
+    font-size: 16px;
 }
 
 .home-card {
@@ -1186,6 +1266,12 @@ body[data-tab="home"] #homePage {
     color: white;
 }
 
+/* Haritadaki panel ekranın altında durduğu için liste yukarı açılır. */
+#mapFilterSlot .multi-list {
+    top: auto;
+    bottom: calc(100% + .3em);
+}
+
 /* Filtre kutusu haritadaki panelin içindeyken çerçevesiz durur */
 #mapFilterSlot #filterBox {
     padding: 0;
@@ -1264,8 +1350,6 @@ body[data-tab="home"] #homePage {
 
 <body>
 
-<div id="map"></div>
-
 <!-- ANA SAYFA -->
 <div id="homePage">
 
@@ -1290,35 +1374,42 @@ body[data-tab="home"] #homePage {
 
         <div id="homeTitleRow">
             <div id="homeModeBox">
-                <button id="homeModeBtn" aria-haspopup="true" aria-expanded="false">
-                    <span id="homeModeLabel">Son eklenenler</span>
-                    <span class="caret" aria-hidden="true">▾</span>
-                </button>
-                <div id="homeModeMenu">
-                    <button data-mode="latest">Son eklenenler</button>
-                    <button data-mode="filter">Filtrele</button>
-                </div>
+                <button data-mode="latest">Son eklenenler</button>
+                <button data-mode="filter">Filtrele</button>
+                <button id="homeMapBtn">Harita</button>
             </div>
 
             <!-- Menüden "Yüklemelerim" seçilince kutunun yerinde bu başlık görünür -->
             <h2 id="homeTitle" hidden>Yüklemelerim</h2>
             <button id="menuBtn" aria-label="Menü">☰</button>
         </div>
-        <!-- FİLTRE (açılır kutuda "Filtrele" seçilince görünür) -->
+        <!-- FİLTRE ("Filtrele" düğmesine basılınca görünür) -->
         <div id="filterBox">
             <div class="filter-grid">
                 <label>
                     <span class="field-label">Şehir</span>
                     <select id="filterCity"></select>
                 </label>
-                <label>
+                <div class="multi" id="filterDistrict">
                     <span class="field-label">İlçe</span>
-                    <select id="filterDistrict"></select>
-                </label>
-                <label>
+                    <div class="multi-anchor">
+                        <button type="button" class="multi-btn" aria-expanded="false">
+                            <span class="multi-text"></span>
+                            <span class="multi-arrow">▾</span>
+                        </button>
+                        <div class="multi-list"></div>
+                    </div>
+                </div>
+                <div class="multi" id="filterType">
                     <span class="field-label">Tür</span>
-                    <select id="filterType"></select>
-                </label>
+                    <div class="multi-anchor">
+                        <button type="button" class="multi-btn" aria-expanded="false">
+                            <span class="multi-text"></span>
+                            <span class="multi-arrow">▾</span>
+                        </button>
+                        <div class="multi-list"></div>
+                    </div>
+                </div>
                 <label>
                     <span class="field-label">Eklenme tarihi</span>
                     <select id="filterAdded"></select>
@@ -1328,12 +1419,11 @@ body[data-tab="home"] #homePage {
                     <select id="filterEnd"></select>
                 </label>
             </div>
-            <div id="filterFooter">
-                <span id="filterCount"></span>
-                <div class="filter-buttons">
-                    <button id="filterApplyBtn">Uygula</button>
-                    <button id="filterClearBtn" class="close-mode">Kapat</button>
-                </div>
+            <span id="filterCount"></span>
+            <div class="filter-buttons">
+                <button id="filterApplyBtn">Uygula</button>
+                <button id="filterClearBtn">Temizle</button>
+                <button id="filterCloseBtn">Kapat</button>
             </div>
         </div>
 
@@ -1341,25 +1431,19 @@ body[data-tab="home"] #homePage {
     </main>
 </div>
 
-<!-- ALT MENÜ -->
+<!-- ALT DÜĞME -->
 <nav class="alt-menu" id="altMenu" aria-label="Alt menü">
-    <div class="kapsul" id="kapsul">
-        <a href="#" class="oge" data-sayfa="anasayfa">
-            <span class="ikon">🏠</span>
-            <span>Ana Sayfa</span>
-        </a>
-        <a href="#" class="oge" data-sayfa="harita">
-            <span class="ikon">🗺️</span>
-            <span>Harita</span>
-        </a>
-    </div>
-
-    <button class="ac-kapa" id="acKapa" type="button" aria-label="Menüyü aç/kapat" aria-expanded="true" aria-controls="kapsul">
+    <button class="ac-kapa" id="acKapa" type="button" aria-label="Haritayı aç">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="6 15 12 9 18 15"></polyline>
         </svg>
     </button>
 </nav>
+
+<!-- HARİTA KATMANI: harita ve üzerindeki düğmeler -->
+<div id="mapLayer">
+
+<div id="map"></div>
 
 <button id="locationBtn" aria-label="Konumum" title="Konumum">📍</button>
 
@@ -1368,12 +1452,6 @@ body[data-tab="home"] #homePage {
         <polygon points="3 5 21 5 14 13 14 19 10 21 10 13"></polygon>
     </svg>
 </button>
-
-<!-- HARİTADAKİ FİLTRE PANELİ (filtre kutusu açılınca buraya taşınır) -->
-<div id="mapFilterPanel">
-    <h3>Filtrele</h3>
-    <div id="mapFilterSlot"></div>
-</div>
 
 <div id="options">
     <label>
@@ -1385,6 +1463,15 @@ body[data-tab="home"] #homePage {
         Diğer yerler
     </label>
 </div>
+
+</div>
+
+<!-- HARİTADAKİ FİLTRE PANELİ (filtre kutusu açılınca buraya taşınır) -->
+<div id="mapFilterPanel">
+    <h3>Filtrele</h3>
+    <div id="mapFilterSlot"></div>
+</div>
+
 
 <!-- GİRİŞ / KAYIT -->
 <div id="loginPanel">
@@ -1493,31 +1580,46 @@ body[data-tab="home"] #homePage {
         <div id="detailCounter"></div>
     </div>
 
-    <h3 id="detailTitle"></h3>
+    <!-- Resmin altındaki bölüm: başlığından tutulup yukarı çekilebilir -->
+    <div id="detailPanel">
 
-    <div id="detailTabs">
-        <button data-tab="info">Bilgiler</button>
-        <button data-tab="comments">Yorumlar</button>
-        <button data-tab="uploader">Yükleyen</button>
-    </div>
+        <div id="detailHead">
+            <div id="detailGrip"></div>
+            <h3 id="detailTitle"></h3>
 
-    <div id="detailBody">
-
-        <div class="tab-page" data-page="info">
-            <div id="detailInfo"></div>
-            <button id="detailDeleteBtn">Bu inşaatı sil</button>
+            <div id="detailTabs">
+                <button data-tab="info">Bilgiler</button>
+                <button data-tab="comments">Yorumlar</button>
+                <button data-tab="location">Konum</button>
+            </div>
         </div>
 
-        <div class="tab-page" data-page="comments">
-            <p class="tab-empty">Yorumlar yakında eklenecek.</p>
-        </div>
+        <div id="detailBody">
+        <div id="detailTrack">
 
-        <div class="tab-page" data-page="uploader">
-            <div class="detail-row"><span>Kullanıcı adı:</span> <b id="detailUser"></b></div>
-            <div class="detail-row"><span>Üyelik tarihi:</span> <b id="detailUserSince"></b></div>
-            <div class="detail-row"><span>Eklediği inşaat:</span> <b id="detailUserCount"></b></div>
-        </div>
+            <div class="tab-page" data-page="info">
+                <div id="detailInfo"></div>
 
+                <div id="detailUploader">
+                    <div class="detail-section">Yükleyen</div>
+                    <div class="detail-row"><span>Kullanıcı adı:</span> <b id="detailUser"></b></div>
+                    <div class="detail-row"><span>Üyelik tarihi:</span> <b id="detailUserSince"></b></div>
+                    <div class="detail-row"><span>Eklediği inşaat:</span> <b id="detailUserCount"></b></div>
+                </div>
+
+                <button id="detailDeleteBtn">Bu inşaatı sil</button>
+            </div>
+
+            <div class="tab-page" data-page="comments">
+                <p class="tab-empty">Yorumlar yakında eklenecek.</p>
+            </div>
+
+            <div class="tab-page" data-page="location">
+                <div id="detailMap"></div>
+            </div>
+
+        </div>
+        </div>
     </div>
 </div>
 </div>
@@ -1985,6 +2087,30 @@ function prepareStyle(style) {
  */
 let mapStyleRequested = false;
 
+/* Stil dosyası bir kez indirilir; küçük harita da aynısını kullanır. */
+let rawStylePromise = null;
+
+function fetchRawStyle() {
+
+    if (!rawStylePromise) {
+
+        rawStylePromise = fetch(STYLE_URL)
+            .then(response => {
+                if (!response.ok)
+                    throw new Error('Stil indirilemedi: ' + response.status);
+                return response.json();
+            });
+
+        /* İndirilemediyse bir sonraki istekte yeniden denensin. */
+        rawStylePromise.catch(() => {
+            rawStylePromise = null;
+        });
+    }
+
+    /* Her harita kendi kopyasıyla çalışır. */
+    return rawStylePromise.then(style => JSON.parse(JSON.stringify(style)));
+}
+
 function loadMapStyle() {
 
     if (mapStyleRequested)
@@ -1992,12 +2118,7 @@ function loadMapStyle() {
 
     mapStyleRequested = true;
 
-    fetch(STYLE_URL)
-        .then(response => {
-            if (!response.ok)
-                throw new Error('Stil indirilemedi: ' + response.status);
-            return response.json();
-        })
+    fetchRawStyle()
         .then(style => {
             map.setStyle(prepareStyle(style));
         })
@@ -2491,12 +2612,12 @@ async function compressImage(file) {
 
 /*
  * Haritadaki küçük kutuda gösterilen küçük resim.
- * Kutunun boyutuna (220 x 140) göre ortadan kırpılır,
- * keskin ekranlar için iki katı çözünürlükte kaydedilir.
- * Birkaç on KB tuttuğu için hemen iner.
+ * Kutu küçüldüğü için resim de küçük kaydedilir; keskin
+ * ekranlarda da net görünecek kadar (kutunun iki katından fazla).
+ * Birkaç KB tuttuğu için hemen iner.
  */
-const THUMB_WIDTH = 440;
-const THUMB_HEIGHT = 280;
+const THUMB_WIDTH = 320;
+const THUMB_HEIGHT = 204;
 
 async function makeThumbnail(blob) {
 
@@ -3374,6 +3495,7 @@ const places = new Map();
 const placePopup = new maplibregl.Popup({
     offset: 42,
     maxWidth: '260px',
+    closeButton: false,
     closeOnClick: false
 });
 
@@ -3396,13 +3518,13 @@ map.on('click', () => {
  * yakınlaştırma seviyesinden itibaren görünür.
  * Sayı küçüldükçe daha uzaktan görünür.
  */
-const MARKER_LABEL_MIN_ZOOM = 12;
+const MARKER_LABEL_MIN_ZOOM = 13;
 
 /*
  * Harita bu seviyenin altına uzaklaştırılırsa (mahalle
  * isimlerinin kaybolduğu uzaklık) açık küçük kutu kapanır.
  */
-const POPUP_MIN_ZOOM = 14;
+const POPUP_MIN_ZOOM = 13;
 
 let lastZoom = map.getZoom();
 
@@ -3410,8 +3532,12 @@ function updateMarkerLabels() {
 
     const zoom = map.getZoom();
 
-    /* Sadece sınır aşağı doğru geçildiği anda kapat. */
-    if (lastZoom >= POPUP_MIN_ZOOM && zoom < POPUP_MIN_ZOOM)
+    /*
+     * Sınırın altındayken harita uzaklaştırılıyorsa kutu kapanır.
+     * (Yakınlaştırırken ya da zoom değişmeden kapanmaz; böylece
+     * uzak görünümde de bir işarete basıp kutuyu açmak mümkündür.)
+     */
+    if (zoom < POPUP_MIN_ZOOM && zoom < lastZoom - 0.001)
         placePopup.remove();
 
     lastZoom = zoom;
@@ -3498,6 +3624,26 @@ function removePlaceMarker(id) {
     places.delete(id);
 }
 
+/* Resimsiz kayıtlarda resmin yerine konan "Resim yok" görseli */
+function noImageBox() {
+
+    const box = document.createElement('div');
+    box.className = 'no-image';
+
+    box.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+        'aria-hidden="true">' +
+        '<rect x="3" y="5" width="18" height="14" rx="2"/>' +
+        '<circle cx="8.5" cy="10" r="1.5"/>' +
+        '<path d="M21 16l-5-5-7 8"/>' +
+        '<path d="M3 3l18 18"/>' +
+        '</svg>' +
+        '<span>Resim yok</span>';
+
+    return box;
+}
+
 /* Küçük kutu: küçük resim + ekleyen kişi */
 function showPlacePopup(id) {
 
@@ -3522,6 +3668,8 @@ function showPlacePopup(id) {
         img.src = thumbURL;
         img.alt = type.label;
         content.appendChild(img);
+    } else {
+        content.appendChild(noImageBox());
     }
 
     /* İnşaat adı burada gösterilmez; sadece tür. */
@@ -3534,13 +3682,6 @@ function showPlacePopup(id) {
     userRow.className = 'popup-sub';
     userRow.textContent = 'Ekleyen: ' + (data.username || '-');
     content.appendChild(userRow);
-
-    const hint = document.createElement('div');
-    hint.className = 'popup-hint';
-    hint.textContent = images.length > 1
-        ? 'Tüm resimler (' + images.length + ') ve bilgiler için dokun'
-        : 'Tüm bilgiler için dokun';
-    content.appendChild(hint);
 
     content.addEventListener('click', () => {
         openDetail(id);
@@ -3563,7 +3704,7 @@ function showPlacePopup(id) {
    -------------------------------------------------
    Haritanın üzerine alttan açılır. Üstte kaydırmalı
    resimler, altta üç sekme: Bilgiler, Yorumlar,
-   Yükleyen.
+   Konum.
 ================================================= */
 
 const detailSheet = document.getElementById('detailSheet');
@@ -3575,7 +3716,19 @@ const detailNextBtn = document.getElementById('detailNextBtn');
 
 let detailId = null;
 
-function setDetailTab(name) {
+/* Sekmelerin sırası (sağa sola kaydırmada kullanılır) */
+const DETAIL_TABS = ['info', 'comments', 'location'];
+
+let detailTab = 'info';
+
+const detailTrack = document.getElementById('detailTrack');
+
+function setDetailTab(name, keepScroll) {
+
+    detailTab = name;
+
+    if (name === 'location')
+        showDetailMap();
 
     detailSheet.querySelectorAll('#detailTabs button')
         .forEach(button => {
@@ -3585,15 +3738,23 @@ function setDetailTab(name) {
             );
         });
 
-    detailSheet.querySelectorAll('.tab-page')
-        .forEach(page => {
-            page.classList.toggle(
-                'active',
-                page.dataset.page === name
-            );
-        });
+    /* Şerit seçili sayfaya kayar; sayfa en üstten başlar. */
+    placeDetailTrack(0);
 
-    document.getElementById('detailBody').scrollTop = 0;
+    const page =
+        detailSheet.querySelector('.tab-page[data-page="' + name + '"]');
+
+    if (page && !keepScroll)
+        page.scrollTop = 0;
+}
+
+/* Şeridi seçili sayfaya (ve parmağın kaydırdığı kadar yana) yerleştirir. */
+function placeDetailTrack(dragPx) {
+
+    const index = DETAIL_TABS.indexOf(detailTab);
+
+    detailTrack.style.transform =
+        'translateX(calc(' + (-index * 100 / 3) + '% + ' + dragPx + 'px))';
 }
 
 detailSheet.querySelectorAll('#detailTabs button')
@@ -3602,6 +3763,292 @@ detailSheet.querySelectorAll('#detailTabs button')
             setDetailTab(button.dataset.tab);
         });
     });
+
+/*
+ * SEKMELER ARASI KAYDIRMA
+ * İçerik parmakla yana çekilince parmağı izler; yandaki sayfa
+ * kayarak görünür. Parmak kalkınca yeterince çekildiyse (ya da
+ * hızlıca savrulduysa) o sayfaya geçilir, değilse geri döner.
+ */
+const detailBody = document.getElementById('detailBody');
+
+/* Geçiş için gereken en az çekme: genişliğin bu kadarı */
+const TAB_SWIPE_RATIO = 0.12;
+
+/* Hızlı savurmada bu kadar çekme bile yeter (genişliğin oranı) */
+const TAB_FLICK_RATIO = 0.04;
+
+let tabSwipe = null;
+
+detailBody.addEventListener('touchstart', event => {
+
+    /* Konum haritasına dokunuş haritayı oynatır, sekmeyi değil. */
+    if (
+        event.touches.length !== 1 ||
+        event.target.closest('#detailMap')
+    ) {
+        tabSwipe = null;
+        return;
+    }
+
+    tabSwipe = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY,
+        time: Date.now(),
+        dx: 0,
+        horizontal: null
+    };
+
+}, { passive: true });
+
+detailBody.addEventListener('touchmove', event => {
+
+    if (!tabSwipe)
+        return;
+
+    const dx = event.touches[0].clientX - tabSwipe.x;
+    const dy = event.touches[0].clientY - tabSwipe.y;
+
+    /* İlk birkaç pikselde yön belli olur: yana mı, aşağı yukarı mı? */
+    if (tabSwipe.horizontal === null) {
+
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6)
+            return;
+
+        tabSwipe.horizontal = Math.abs(dx) > Math.abs(dy);
+
+        if (tabSwipe.horizontal) {
+
+            detailTrack.classList.add('dragging');
+
+            /* Konum sayfası görünmek üzereyse haritası hazırlansın. */
+            if (detailTab === 'comments')
+                showDetailMap();
+        }
+    }
+
+    if (!tabSwipe.horizontal)
+        return;
+
+    const index = DETAIL_TABS.indexOf(detailTab);
+
+    /* İlk ve son sayfada dışarı doğru çekiş zorlaşır. */
+    const atEdge =
+        (index === 0 && dx > 0) ||
+        (index === DETAIL_TABS.length - 1 && dx < 0);
+
+    tabSwipe.dx = dx;
+
+    placeDetailTrack(atEdge ? dx * 0.25 : dx);
+
+}, { passive: true });
+
+function endTabSwipe() {
+
+    if (!tabSwipe)
+        return;
+
+    const swipe = tabSwipe;
+
+    tabSwipe = null;
+    detailTrack.classList.remove('dragging');
+
+    if (!swipe.horizontal) {
+        return;
+    }
+
+    const width = detailBody.clientWidth || 1;
+    const distance = Math.abs(swipe.dx);
+    const speed = distance / Math.max(1, Date.now() - swipe.time);
+
+    const enough =
+        distance > width * TAB_SWIPE_RATIO ||
+        (distance > width * TAB_FLICK_RATIO && speed > 0.3);
+
+    const next =
+        DETAIL_TABS.indexOf(detailTab) + (swipe.dx < 0 ? 1 : -1);
+
+    if (enough && next >= 0 && next < DETAIL_TABS.length)
+        setDetailTab(DETAIL_TABS[next], true);
+    else
+        placeDetailTrack(0);
+}
+
+detailBody.addEventListener('touchend', endTabSwipe, { passive: true });
+detailBody.addEventListener('touchcancel', endTabSwipe, { passive: true });
+
+/*
+ * BÖLÜMÜ YUKARI ÇEKME
+ * Başlık ve sekmelerin olduğu yerden tutulup sürüklenir.
+ */
+const detailPanel = document.getElementById('detailPanel');
+const detailHead = document.getElementById('detailHead');
+const detailGallery = document.getElementById('detailGallery');
+
+let detailLift = 0;
+let liftDrag = null;
+let liftDragged = false;
+
+/* En fazla ne kadar çekilebilir: okların hemen altına kadar. */
+function maxDetailLift() {
+
+    const gallery = detailGallery.getBoundingClientRect();
+    const fontSize = parseFloat(getComputedStyle(detailPanel).fontSize);
+
+    /* Oklar resmin ortasındadır. */
+    const arrowBottom =
+        gallery.top + gallery.height / 2 +
+        (detailNextBtn.offsetHeight || detailPrevBtn.offsetHeight || 44) / 2;
+
+    const restTop = gallery.bottom;
+
+    return Math.max(0, restTop - (arrowBottom + fontSize * 0.5));
+}
+
+function setDetailLift(value) {
+
+    detailLift = Math.max(0, Math.min(maxDetailLift(), value));
+    detailPanel.style.setProperty('--lift', detailLift + 'px');
+}
+
+detailHead.addEventListener('pointerdown', event => {
+    liftDrag = { y: event.clientY, lift: detailLift, moved: false };
+    liftDragged = false;
+});
+
+detailHead.addEventListener('pointermove', event => {
+
+    if (!liftDrag)
+        return;
+
+    const dy = liftDrag.y - event.clientY;
+
+    /* Küçük oynamalar sekmeye dokunma sayılır. */
+    if (!liftDrag.moved) {
+
+        if (Math.abs(dy) < 8)
+            return;
+
+        liftDrag.moved = true;
+        liftDragged = true;
+
+        try {
+            detailHead.setPointerCapture(event.pointerId);
+        } catch (e) {}
+    }
+
+    setDetailLift(liftDrag.lift + dy);
+});
+
+['pointerup', 'pointercancel'].forEach(name => {
+    detailHead.addEventListener(name, () => {
+        liftDrag = null;
+    });
+});
+
+/* Tarayıcının kendi "resmi sürükle-bırak"ı araya girmesin. */
+detailSheet.addEventListener('dragstart', event => {
+    event.preventDefault();
+});
+
+/* Sürükleme bittiğinde altındaki sekme düğmesi tıklanmış sayılmasın. */
+detailHead.addEventListener('click', event => {
+
+    if (liftDragged) {
+        liftDragged = false;
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+}, true);
+
+/*
+ * KONUM SEKMESİ
+ * Sadece bu inşaatın işaretini gösteren küçük bir harita.
+ * Harita ancak sekme ilk açıldığında oluşturulur.
+ */
+const DETAIL_MAP_ZOOM = 12;
+
+let detailMap = null;
+let detailMapMarker = null;
+
+/* Haritanın en son hangi inşaat için ortalandığı */
+let detailMapPlaceId = null;
+
+function showDetailMap() {
+
+    const place = places.get(detailId);
+
+    if (!place)
+        return;
+
+    const center = [place.data.lng, place.data.lat];
+
+    if (!detailMap) {
+
+        detailMap = new maplibregl.Map({
+            container: 'detailMap',
+            center: center,
+            zoom: DETAIL_MAP_ZOOM,
+            attributionControl: { compact: true },
+
+            /* Kaydırılır ve yakınlaştırılır; döndürülmez, eğilmez. */
+            dragRotate: false,
+            pitchWithRotate: false,
+            touchPitch: false,
+            maxBounds: [[24.5, 34.5], [46.0, 43.5]]
+        });
+
+        detailMap.touchZoomRotate.disableRotation();
+        detailMap.keyboard.disable();
+
+        const pin = document.createElement('div');
+        pin.className = 'place-pin';
+
+        detailMapMarker = new maplibregl.Marker({
+            element: pin,
+            anchor: 'bottom',
+            offset: [0, -11]
+        });
+
+        const mapForStyle = detailMap;
+
+        fetchRawStyle()
+            .then(style => {
+
+                const prepared = prepareStyle(style);
+
+                /* Bu haritada yer ve yol isimleri hep görünür. */
+                prepared.layers.forEach(layer => {
+                    if (layer.layout && layer.layout.visibility === 'none')
+                        layer.layout.visibility = 'visible';
+                });
+
+                mapForStyle.setStyle(prepared);
+            })
+            .catch(error => {
+                console.error(error);
+                mapForStyle.setStyle(STYLE_URL);
+            });
+    }
+
+    /*
+     * Başka bir inşaata geçildiyse harita onun üzerine gelir;
+     * aynı inşaatta sekme değiştirip dönünce bırakıldığı yerde kalır.
+     */
+    if (detailMapPlaceId !== detailId) {
+        detailMapPlaceId = detailId;
+        detailMap.jumpTo({ center: center, zoom: DETAIL_MAP_ZOOM });
+    }
+
+    detailMapMarker.setLngLat(center).addTo(detailMap);
+
+    /* Sekme görünür olduktan sonra boyut yeniden ölçülür. */
+    requestAnimationFrame(() => {
+        if (detailMap)
+            detailMap.resize();
+    });
+}
 
 /* Resimler kaydırıldıkça "2 / 5" sayacı güncellenir. */
 function updateDetailCounter() {
@@ -3651,6 +4098,8 @@ window.addEventListener('resize', () => {
 
     if (!detailId)
         return;
+
+    setDetailLift(detailLift);
 
     detailImages.scrollLeft =
         currentImageIndex() * detailImages.clientWidth;
@@ -3801,8 +4250,8 @@ function openDetail(id) {
         detailImages.appendChild(img);
     });
 
-    /* Resimsiz kayıtta resim alanı ince bir şeride iner. */
-    detailSheet.classList.toggle('no-images', !images.length);
+    if (!images.length)
+        detailImages.appendChild(noImageBox());
 
     detailImages.scrollLeft = 0;
     updateDetailCounter();
@@ -3810,7 +4259,16 @@ function openDetail(id) {
     refreshDeleteButton();
 
     showUploader(id, data);
+
+    /* Bölüm her açılışta aşağıda başlar. */
+    detailLift = 0;
+    detailPanel.style.setProperty('--lift', '0px');
+
+    /* İlk sekmeye kayarak değil, doğrudan geçilir. */
+    detailTrack.classList.add('dragging');
     setDetailTab('info');
+    detailTrack.getBoundingClientRect();
+    detailTrack.classList.remove('dragging');
 
     detailSheet.classList.add('open');
 
@@ -3841,6 +4299,9 @@ function closeDetail() {
 function hideDetail() {
     detailSheet.classList.remove('open');
     detailId = null;
+
+    /* Yeniden açılınca konum haritası baştan ortalansın. */
+    detailMapPlaceId = null;
 }
 
 document.getElementById('detailCloseBtn').addEventListener(
@@ -4556,20 +5017,12 @@ detailShareBtn.addEventListener(
 /* =================================================
    SEKMELER VE ANA SAYFA
    -------------------------------------------------
-   Alt menüde iki sekme vardır: Ana Sayfa ve Harita.
-   Ana sayfa haritanın üzerinde durur, Harita
-   sekmesine geçilince gizlenir.
+   İki sekme vardır: Ana Sayfa ve Harita. Harita,
+   ana sayfanın üzerine alttan kayarak açılır.
 ================================================= */
 
 const altMenu = document.getElementById('altMenu');
 const acKapa = document.getElementById('acKapa');
-const menuItems = document.querySelectorAll('.alt-menu .oge');
-
-/* Alt menüdeki öğe adı -> sekme adı */
-const MENU_TABS = {
-    anasayfa: 'home',
-    harita: 'map'
-};
 const homeMenu = document.getElementById('homeMenu');
 const homeList = document.getElementById('homeList');
 
@@ -4593,12 +5046,10 @@ function setTab(name) {
 
     document.body.dataset.tab = name;
 
-    menuItems.forEach(item => {
-        item.classList.toggle(
-            'aktif',
-            MENU_TABS[item.dataset.sayfa] === name
-        );
-    });
+    acKapa.setAttribute(
+        'aria-label',
+        name === 'map' ? 'Ana sayfaya dön' : 'Haritayı aç'
+    );
 
     homeMenu.classList.remove('open');
 
@@ -4610,44 +5061,13 @@ function setTab(name) {
     }
 }
 
-menuItems.forEach(item => {
-    item.addEventListener('click', event => {
-        event.preventDefault();
-
-        const tab = MENU_TABS[item.dataset.sayfa];
-
-        clearTimeout(menuCloseTimer);
-        showTab(tab);
-
-        /* Harita seçildiyse menü biraz sonra kapanır. */
-        if (tab === 'map') {
-            menuCloseTimer = setTimeout(() => {
-                setMenuClosed(true);
-            }, MENU_AUTO_CLOSE_MS);
-        }
-    });
-});
-
-/* Alt menüyü kapatır (true) ya da açar (false). */
-function setMenuClosed(closed) {
-    altMenu.classList.toggle('kapali', closed);
-    acKapa.setAttribute('aria-expanded', String(!closed));
-}
-
-/* Mavi düğme: alt menüyü aç / kapat */
-acKapa.addEventListener('click', () => {
-    clearTimeout(menuCloseTimer);
-    setMenuClosed(!altMenu.classList.contains('kapali'));
-});
-
 /*
- * Alt menüdeki "Harita" düğmesine basıldıktan bu kadar
- * süre sonra alt menü kendiliğinden kapanır (milisaniye).
- * Mavi düğmeyle tekrar açılır.
+ * Alt düğme: ana sayfadayken haritayı açar (alttan yukarı kayar),
+ * haritadayken kapatır (aşağı kayar) ve ana sayfaya döner.
  */
-const MENU_AUTO_CLOSE_MS = 1000;
-
-let menuCloseTimer = null;
+acKapa.addEventListener('click', () => {
+    showTab(document.body.dataset.tab === 'map' ? 'home' : 'map');
+});
 
 /* MENÜ */
 
@@ -4655,9 +5075,6 @@ document.getElementById('menuBtn').addEventListener(
     'click',
     event => {
         event.stopPropagation();
-
-        /* Soldaki açılır menü açıksa kapansın; ikisi birden açık kalmasın. */
-        closeHomeModeMenu();
 
         /* Menü, düğmenin hemen altında açılır (düğme sayfayla birlikte kayar). */
         const buttonBox = event.currentTarget.getBoundingClientRect();
@@ -4740,7 +5157,7 @@ document.getElementById('menuMap').addEventListener(
 
 /*
  * ANA SAYFA LİSTESİ
- * Başlıktaki açılır kutudan seçilir:
+ * Üstteki düğmelerden seçilir:
  *   latest : son eklenenler (herkesin). İnşaat adı gösterilmez.
  *   filter : şehir, ilçe, tür, eklenme tarihi ve bitiş tarihine
  *            göre süzülmüş liste. Aynı filtre haritadaki işaretlere
@@ -4749,13 +5166,6 @@ document.getElementById('menuMap').addEventListener(
  *            açılır). İnşaat adı sadece burada görünür.
  */
 const homeModeBox = document.getElementById('homeModeBox');
-const homeModeBtn = document.getElementById('homeModeBtn');
-
-/* Açılır menüdeki seçeneklerin adları */
-const HOME_MODE_LABELS = {
-    latest: 'Son eklenenler',
-    filter: 'Filtrele'
-};
 const filterBox = document.getElementById('filterBox');
 const filterCity = document.getElementById('filterCity');
 const filterDistrict = document.getElementById('filterDistrict');
@@ -4784,39 +5194,139 @@ function leaveHomeFilter() {
     renderHomeList();
 }
 
-function closeHomeModeMenu() {
-    homeModeBox.classList.remove('open');
-    homeModeBtn.setAttribute('aria-expanded', 'false');
+/*
+ * ANA SAYFADA YANA KAYDIRMA
+ * Sıra: Son eklenenler -> Filtrele -> Harita. Sola kaydırınca
+ * sonrakine, sağa kaydırınca öncekine geçilir. İçerik parmağı izler.
+ * (Haritadan geri kaydırılamaz; orada kaydırma haritayı oynatır.)
+ */
+const HOME_SWIPE_ORDER = ['latest', 'filter', 'map'];
+
+const homeMain = document.getElementById('homeMain');
+
+let homeSwipe = null;
+
+function setHomeSwipeX(px) {
+    homeMain.style.setProperty('--swipe-x', px + 'px');
 }
 
-homeModeBtn.addEventListener('click', event => {
+homeMain.addEventListener('touchstart', event => {
 
-    event.stopPropagation();
+    /* "Yüklemelerim"de kaydırma yoktur. */
+    if (event.touches.length !== 1 || homeMode === 'mine') {
+        homeSwipe = null;
+        return;
+    }
 
-    const open = homeModeBox.classList.toggle('open');
+    homeSwipe = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY,
+        time: Date.now(),
+        dx: 0,
+        horizontal: null
+    };
 
-    homeModeBtn.setAttribute('aria-expanded', String(open));
-    homeMenu.classList.remove('open');
-});
+}, { passive: true });
 
-homeModeBox.querySelectorAll('#homeModeMenu button').forEach(item => {
+homeMain.addEventListener('touchmove', event => {
 
+    if (!homeSwipe)
+        return;
+
+    const dx = event.touches[0].clientX - homeSwipe.x;
+    const dy = event.touches[0].clientY - homeSwipe.y;
+
+    if (homeSwipe.horizontal === null) {
+
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6)
+            return;
+
+        homeSwipe.horizontal = Math.abs(dx) > Math.abs(dy);
+
+        if (homeSwipe.horizontal)
+            homeMain.classList.add('swiping');
+    }
+
+    if (!homeSwipe.horizontal)
+        return;
+
+    homeSwipe.dx = dx;
+
+    /* İlk sayfada geriye doğru çekiş zorlaşır. */
+    const atEdge = homeMode === 'latest' && dx > 0;
+
+    setHomeSwipeX(atEdge ? dx * 0.25 : dx);
+
+}, { passive: true });
+
+function endHomeSwipe() {
+
+    if (!homeSwipe)
+        return;
+
+    const swipe = homeSwipe;
+
+    homeSwipe = null;
+    homeMain.classList.remove('swiping');
+
+    if (!swipe.horizontal)
+        return;
+
+    const width = homeMain.clientWidth || 1;
+    const distance = Math.abs(swipe.dx);
+    const speed = distance / Math.max(1, Date.now() - swipe.time);
+
+    const enough =
+        distance > width * TAB_SWIPE_RATIO ||
+        (distance > width * TAB_FLICK_RATIO && speed > 0.3);
+
+    const direction = swipe.dx < 0 ? 1 : -1;
+    const next = HOME_SWIPE_ORDER[
+        HOME_SWIPE_ORDER.indexOf(homeMode) + direction
+    ];
+
+    if (!enough || !next) {
+        setHomeSwipeX(0);
+        return;
+    }
+
+    /* Harita kendi hareketiyle (alttan) açılır. */
+    if (next === 'map') {
+        setHomeSwipeX(0);
+        showTab('map');
+        return;
+    }
+
+    /* Eski içerik kayarak çıkar, yenisi karşı taraftan kayarak girer. */
+    setHomeSwipeX(-direction * width);
+
+    setTimeout(() => {
+
+        homeMain.classList.add('swiping');
+        setHomeMode(next);
+        setHomeSwipeX(direction * width);
+
+        homeMain.getBoundingClientRect();
+
+        homeMain.classList.remove('swiping');
+        setHomeSwipeX(0);
+
+    }, 180);
+}
+
+homeMain.addEventListener('touchend', endHomeSwipe, { passive: true });
+homeMain.addEventListener('touchcancel', endHomeSwipe, { passive: true });
+
+/* Üstteki üç düğme */
+homeModeBox.querySelectorAll('button[data-mode]').forEach(item => {
     item.addEventListener('click', () => {
-        closeHomeModeMenu();
         setHomeMode(item.dataset.mode);
     });
 });
 
-/* Başka bir yere basınca ya da sayfa kaydırılınca menü kapanır. */
-document.addEventListener('click', event => {
-    if (!homeModeBox.contains(event.target))
-        closeHomeModeMenu();
+document.getElementById('homeMapBtn').addEventListener('click', () => {
+    showTab('map');
 });
-
-document.getElementById('homeMain').addEventListener(
-    'scroll',
-    closeHomeModeMenu
-);
 
 function createdMillis(data) {
 
@@ -4849,6 +5359,195 @@ function fillSelect(select, firstLabel, options) {
         options.some(item => item.value === previous) ? previous : '';
 }
 
+/*
+ * ÇOKLU SEÇİM KUTUSU
+ * İşaretli değerler "selected" kümesinde tutulur.
+ */
+function createMulti(box, allLabel, countWord) {
+
+    const button = box.querySelector('.multi-btn');
+    const text = box.querySelector('.multi-text');
+    const list = box.querySelector('.multi-list');
+
+    const multi = {
+        box: box,
+        selected: new Set(),
+        options: [],
+        emptyLabel: allLabel,
+
+        /* Düğmede: hiçbiri / tek seçimin adı / "3 ilçe" */
+        updateLabel() {
+
+            const chosen = multi.options
+                .filter(item => multi.selected.has(item.value));
+
+            text.textContent =
+                chosen.length === 0 ? multi.emptyLabel :
+                chosen.length === 1 ? chosen[0].label :
+                chosen.length + ' ' + countWord;
+
+            box.classList.toggle('selected', chosen.length > 0);
+        },
+
+        /* Seçenekleri yeniler; listede kalmayan seçimler düşer. */
+        setOptions(options, emptyLabel) {
+
+            multi.options = options;
+            multi.emptyLabel = emptyLabel;
+
+            multi.selected.forEach(value => {
+                if (!options.some(item => item.value === value))
+                    multi.selected.delete(value);
+            });
+
+            list.textContent = '';
+
+            options.forEach(item => {
+
+                const row = document.createElement('label');
+                const input = document.createElement('input');
+                const name = document.createElement('span');
+
+                input.type = 'checkbox';
+                input.value = item.value;
+                input.checked = multi.selected.has(item.value);
+                name.textContent = item.label;
+
+                input.addEventListener('change', () => {
+
+                    if (input.checked)
+                        multi.selected.add(item.value);
+                    else
+                        multi.selected.delete(item.value);
+
+                    multi.updateLabel();
+                    onFilterChange();
+                });
+
+                row.appendChild(input);
+                row.appendChild(name);
+                list.appendChild(row);
+            });
+
+            button.disabled = options.length === 0;
+
+            if (!options.length)
+                multi.close();
+
+            multi.updateLabel();
+        },
+
+        clear() {
+
+            multi.selected.clear();
+
+            list.querySelectorAll('input').forEach(input => {
+                input.checked = false;
+            });
+
+            multi.updateLabel();
+        },
+
+        close() {
+            box.classList.remove('open');
+            button.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    button.addEventListener('click', () => {
+
+        const open = !box.classList.contains('open');
+
+        /* Aynı anda tek liste açık kalır. */
+        closeMultis();
+
+        box.classList.toggle('open', open);
+        button.setAttribute('aria-expanded', String(open));
+    });
+
+    return multi;
+}
+
+const districtMulti = createMulti(filterDistrict, 'Tüm ilçeler', 'ilçe');
+const typeMulti = createMulti(filterType, 'Tüm türler', 'tür');
+
+function closeMultis() {
+    districtMulti.close();
+    typeMulti.close();
+}
+
+function multiOpen() {
+    return filterDistrict.classList.contains('open') ||
+        filterType.classList.contains('open');
+}
+
+/*
+ * Liste açıkken dışarıda bir yere dokunulursa sadece liste kapanır;
+ * dokunulan şey (düğme, kutu, kart...) çalışmaz.
+ */
+let multiSwallow = false;
+
+function outsideMulti(event) {
+    return !event.target.closest('.multi.open');
+}
+
+['pointerdown', 'mousedown', 'touchstart'].forEach(name => {
+
+    document.addEventListener(
+        name,
+        event => {
+
+            if (name === 'pointerdown')
+                multiSwallow = multiOpen() && outsideMulti(event);
+
+            if (!multiSwallow)
+                return;
+
+            /* Açılır kutular açılmasın, başka dinleyiciler de duymasın. */
+            if (event.cancelable)
+                event.preventDefault();
+
+            event.stopImmediatePropagation();
+        },
+        { capture: true, passive: false }
+    );
+});
+
+['pointerup', 'pointercancel'].forEach(name => {
+
+    document.addEventListener(
+        name,
+        () => {
+
+            if (!multiSwallow)
+                return;
+
+            closeMultis();
+
+            /* Ardından gelebilecek tıklama da yutulur. */
+            setTimeout(() => {
+                multiSwallow = false;
+            }, 350);
+        },
+        true
+    );
+});
+
+document.addEventListener(
+    'click',
+    event => {
+
+        if (!multiSwallow)
+            return;
+
+        multiSwallow = false;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    },
+    true
+);
+
 function sortedUnique(values) {
 
     return Array.from(new Set(values.filter(Boolean)))
@@ -4872,12 +5571,19 @@ function refreshFilterOptions() {
         Object.keys(DISTRICTS).map(name => ({ value: name, label: name }))
     );
 
-    fillSelect(
-        filterDistrict,
-        filterCity.value ? 'Tüm ilçeler' : 'Önce şehir seç',
-        (DISTRICTS[filterCity.value] || [])
-            .map(name => ({ value: name, label: name }))
-    );
+    const districts = (DISTRICTS[filterCity.value] || [])
+        .map(name => ({ value: name, label: name }));
+
+    /* Şehir değişmediyse liste (ve kaydırma yeri) olduğu gibi kalır. */
+    if (districtMulti.city !== filterCity.value) {
+
+        districtMulti.city = filterCity.value;
+
+        districtMulti.setOptions(
+            districts,
+            filterCity.value ? 'Tüm ilçeler' : 'Önce şehir seç'
+        );
+    }
 
     fillSelect(
         filterEnd,
@@ -4892,13 +5598,12 @@ function refreshFilterOptions() {
     );
 }
 
-fillSelect(
-    filterType,
-    'Tüm türler',
+typeMulti.setOptions(
     PLACE_TYPES.map(type => ({
         value: type.key,
         label: type.icon + ' ' + type.label
-    }))
+    })),
+    'Tüm türler'
 );
 
 fillSelect(filterAdded, 'Hepsi', [
@@ -4915,28 +5620,42 @@ fillSelect(filterAdded, 'Hepsi', [
  */
 const FILTER_SELECTS = {
     city: filterCity,
-    district: filterDistrict,
-    type: filterType,
     added: filterAdded,
     end: filterEnd
 };
 
-const appliedFilter = { city: '', district: '', type: '', added: '', end: '' };
+/* İlçe ve tür çoklu seçimdir: uygulanmış değerleri liste olarak tutulur. */
+const FILTER_MULTIS = {
+    district: districtMulti,
+    type: typeMulti
+};
+
+const appliedFilter = {
+    city: '',
+    district: [],
+    type: [],
+    added: '',
+    end: ''
+};
 
 function matchesFilter(data) {
 
     if (appliedFilter.city && data.city !== appliedFilter.city)
         return false;
 
-    if (appliedFilter.district && data.district !== appliedFilter.district)
+    if (
+        appliedFilter.district.length &&
+        !appliedFilter.district.includes(data.district)
+    ) {
         return false;
+    }
 
-    if (appliedFilter.type) {
+    if (appliedFilter.type.length) {
 
         /* "Bilmiyorum", türü hiç seçilmemiş kayıtları da kapsar. */
         const type = data.type || 'bilinmiyor';
 
-        if (type !== appliedFilter.type)
+        if (!appliedFilter.type.includes(type))
             return false;
     }
 
@@ -4964,13 +5683,16 @@ function matchesFilter(data) {
 
 /* Uygulanmış bir filtre var mı? */
 function filterActive() {
-    return Object.keys(appliedFilter).some(key => appliedFilter[key] !== '');
+    return Object.keys(appliedFilter)
+        .some(key => appliedFilter[key].length > 0);
 }
 
 /* Kutularda (henüz uygulanmamış olsa da) bir seçim var mı? */
 function filterSelected() {
     return Object.keys(FILTER_SELECTS)
-        .some(key => FILTER_SELECTS[key].value !== '');
+            .some(key => FILTER_SELECTS[key].value !== '') ||
+        Object.keys(FILTER_MULTIS)
+            .some(key => FILTER_MULTIS[key].selected.size > 0);
 }
 
 const filterCount = document.getElementById('filterCount');
@@ -4994,22 +5716,6 @@ function updateFilterCount() {
     });
 
     filterCount.textContent = count + ' inşaat';
-}
-
-/*
- * Bir seçim ya da uygulanmış filtre varken düğme mor "Temizle"dir.
- * Yokken kırmızı "Kapat" olur ve filtreyi kapatır.
- */
-function filterCanClear() {
-    return filterSelected() || filterActive();
-}
-
-function updateFilterButtons() {
-
-    const canClear = filterCanClear();
-
-    filterClearBtn.textContent = canClear ? 'Temizle' : 'Kapat';
-    filterClearBtn.classList.toggle('close-mode', !canClear);
 }
 
 /*
@@ -5049,7 +5755,6 @@ function onFilterChange() {
 
     filterCountShown = false;
     updateFilterCount();
-    updateFilterButtons();
 }
 
 /* "Uygula": seçimler listeye ve haritaya uygulanır. */
@@ -5059,11 +5764,16 @@ function applyFilter() {
         appliedFilter[key] = FILTER_SELECTS[key].value;
     });
 
+    Object.keys(FILTER_MULTIS).forEach(key => {
+        appliedFilter[key] = Array.from(FILTER_MULTIS[key].selected);
+    });
+
+    closeMultis();
+
     filterCountShown = true;
 
     renderHomeList();
     updateMapFilter();
-    updateFilterButtons();
 }
 
 document.getElementById('filterApplyBtn').addEventListener(
@@ -5071,7 +5781,7 @@ document.getElementById('filterApplyBtn').addEventListener(
     applyFilter
 );
 
-[filterCity, filterDistrict, filterType, filterAdded, filterEnd]
+[filterCity, filterAdded, filterEnd]
     .forEach(select => {
         select.addEventListener('change', onFilterChange);
     });
@@ -5131,35 +5841,38 @@ document.addEventListener(
     true
 );
 
-document.getElementById('filterClearBtn').addEventListener(
-    'click',
-    () => {
+/* "Temizle": seçimler ve uygulanmış filtre birlikte sıfırlanır. */
+filterClearBtn.addEventListener('click', () => {
 
-        /* "Kapat": temizlenecek bir şey yoksa filtre kapanır. */
-        if (!filterCanClear()) {
+    Object.keys(FILTER_SELECTS).forEach(key => {
+        FILTER_SELECTS[key].value = '';
+        appliedFilter[key] = '';
+    });
 
-            if (filterBox.parentElement === mapFilterSlot)
-                closeMapFilter();
-            else
-                setHomeMode('latest');
+    Object.keys(FILTER_MULTIS).forEach(key => {
+        FILTER_MULTIS[key].clear();
+        appliedFilter[key] = [];
+    });
 
-            return;
-        }
+    closeMultis();
 
-        /* "Temizle": seçimler ve uygulanmış filtre birlikte sıfırlanır. */
-        Object.keys(FILTER_SELECTS).forEach(key => {
-            FILTER_SELECTS[key].value = '';
-            appliedFilter[key] = '';
-        });
+    filterCountShown = false;
 
-        filterCountShown = false;
+    refreshFilterOptions();
+    renderHomeList();
+    updateMapFilter();
+});
 
-        refreshFilterOptions();
-        renderHomeList();
-        updateMapFilter();
-        updateFilterButtons();
-    }
-);
+/* "Kapat": filtre kutusunu kapatır. */
+document.getElementById('filterCloseBtn').addEventListener('click', () => {
+
+    closeMultis();
+
+    if (filterBox.parentElement === mapFilterSlot)
+        closeMapFilter();
+    else
+        setHomeMode('latest');
+});
 
 /* "İlçe, Şehir" */
 function shortLocation(data) {
@@ -5175,16 +5888,13 @@ function renderHomeList() {
     const mine = homeMode === 'mine';
     const filtering = homeMode === 'filter';
 
-    /* "Yüklemelerim"de açılır kutunun yerinde başlık görünür. */
+    /* "Yüklemelerim"de üstteki düğmelerin yerinde başlık görünür. */
     homeModeBox.hidden = mine;
     document.getElementById('homeTitle').hidden = !mine;
 
     if (!mine) {
 
-        document.getElementById('homeModeLabel').textContent =
-            HOME_MODE_LABELS[homeMode];
-
-        homeModeBox.querySelectorAll('#homeModeMenu button')
+        homeModeBox.querySelectorAll('button[data-mode]')
             .forEach(item => {
                 item.classList.toggle(
                     'active',
@@ -5270,11 +5980,8 @@ function renderHomeList() {
 
         } else {
 
-            /* Resimsiz kayıt: resmin yerinde türün ikonu */
-            const noImage = document.createElement('div');
-            noImage.className = 'home-card-noimg';
-            noImage.textContent = type.icon;
-            card.appendChild(noImage);
+            /* Resimsiz kayıt: resmin yerinde "Resim yok" görseli */
+            card.appendChild(noImageBox());
         }
 
         const text = document.createElement('div');
