@@ -689,9 +689,12 @@ body[data-tab="map"] .ac-kapa svg {
 /* Menü düğmesi: ana sayfada "Son eklenenler" başlığının sağında */
 #menuBtn {
     flex: none;
-    width: 40px;
+    width: 32px;
     height: 40px;
     padding: 0;
+
+    /* Simge, üstteki resmin sağ kenarıyla aynı hizada biter. */
+    text-align: right;
     background: none;
     color: #333;
     font-size: 24px;
@@ -1280,8 +1283,9 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /* Haritadaki filtre düğmesi: konum düğmesinin altında */
+/* Filtre düğmesi konum düğmesinin solunda durur. */
 #mapFilterBtn {
-    top: 66px;
+    right: 64px;
 }
 
 /* Bir filtre seçiliyken mavi görünür */
@@ -3562,13 +3566,13 @@ map.on('click', () => {
  * yakınlaştırma seviyesinden itibaren görünür.
  * Sayı küçüldükçe daha uzaktan görünür.
  */
-const MARKER_LABEL_MIN_ZOOM = 13;
+const MARKER_LABEL_MIN_ZOOM = 12;
 
 /*
  * Harita bu seviyenin altına uzaklaştırılırsa (mahalle
  * isimlerinin kaybolduğu uzaklık) açık küçük kutu kapanır.
  */
-const POPUP_MIN_ZOOM = 13;
+const POPUP_MIN_ZOOM = 12;
 
 let lastZoom = map.getZoom();
 
@@ -5885,6 +5889,9 @@ function onFilterChange() {
 
     filterCountShown = false;
     updateFilterCount();
+
+    /* Eski sonuç listesi de kalkar; yeniden "Uygula" gerekir. */
+    renderFilterList();
 }
 
 /* "Uygula": seçimler listeye ve haritaya uygulanır. */
@@ -6103,6 +6110,15 @@ function renderFilterList() {
 
     if (filterBox.parentElement !== mapFilterSlot)
         refreshFilterOptions();
+
+    /*
+     * Liste sadece "Uygula"ya basıldıktan sonra görünür ("N inşaat"
+     * yazısıyla birlikte); seçim değişince ya da temizlenince kalkar.
+     */
+    if (!filterCountShown) {
+        homeFilterList.textContent = '';
+        return;
+    }
 
     const items = [];
 
