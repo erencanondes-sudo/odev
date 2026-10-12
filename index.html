@@ -1237,7 +1237,7 @@ body[data-tab="map"] .ac-kapa svg {
     align-items: center;
     gap: .35em;
     padding-right: 1.8em;
-    margin-bottom: .05em;
+    margin-bottom: .3em;
     font-size: 1.13em;
     font-weight: 800;
     letter-spacing: -.01em;
@@ -1288,6 +1288,11 @@ body[data-tab="map"] .ac-kapa svg {
     white-space: nowrap;
 }
 
+/* Simge renkleri */
+.home-card .pin svg      { color: #8b5cf6; }
+.home-card .like svg     { color: #16a34a; }
+.home-card .dislike svg  { color: #dc2626; }
+
 /* En alttaki satır: yorum, beğeni, beğenmeme sayıları (üstünde ince ayraç) */
 .home-card-stats {
     display: flex;
@@ -1306,6 +1311,15 @@ body[data-tab="map"] .ac-kapa svg {
     display: inline-flex;
     align-items: center;
     gap: .35em;
+}
+
+/* Yorum ile beğeni arası biraz, beğeni ile beğenmeme arası çok az daha açık */
+.home-card-stat.comment {
+    margin-right: .6em;
+}
+
+.home-card-stat.like {
+    margin-right: .25em;
 }
 
 .home-card-stat svg {
@@ -6305,8 +6319,8 @@ const CARD_ICONS = {
     pin:
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/>' +
-        '<circle cx="12" cy="9.5" r="2.5"/></svg>',
+        '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" fill="currentColor"/>' +
+        '<circle cx="12" cy="9.5" r="2.5" fill="#fff"/></svg>',
     user:
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -6351,10 +6365,10 @@ const CARD_ICONS = {
 };
 
 /* Simgeli bir kart satırı */
-function cardRow(icon, textValue) {
+function cardRow(icon, textValue, kind) {
 
     const row = document.createElement('div');
-    row.className = 'home-card-row';
+    row.className = 'home-card-row ' + kind;
     row.innerHTML = icon;
 
     const span = document.createElement('span');
@@ -6467,33 +6481,30 @@ function renderCards(container, items, mine, emptyText) {
         const text = document.createElement('div');
         text.className = 'home-card-text';
 
-        /* Başlık: tür ikonu ve adı (kendi listesinde inşaatın adı varsa o) */
+        /* Başlık: türün adı (kendi listesinde inşaatın adı varsa o) */
         const title = document.createElement('div');
         title.className = 'home-card-title';
 
-        const titleIcon = document.createElement('span');
-        titleIcon.textContent = type.icon;
-
+        /* Tür ikonu listede gösterilmez, sadece adı. */
         const titleText = document.createElement('span');
         titleText.textContent = (mine && data.name) ? data.name : type.label;
 
-        title.appendChild(titleIcon);
         title.appendChild(titleText);
         text.appendChild(title);
 
         /* Konum: "İlçe, Şehir" */
         if (shortLocation(data))
-            text.appendChild(cardRow(CARD_ICONS.pin, shortLocation(data)));
+            text.appendChild(cardRow(CARD_ICONS.pin, shortLocation(data), 'pin'));
 
         /* Ekleyen (kendi listesinde gerek yok) */
         if (!mine)
             text.appendChild(
-                cardRow(CARD_ICONS.user, 'Ekleyen: ' + (data.username || '-'))
+                cardRow(CARD_ICONS.user, 'Ekleyen: ' + (data.username || '-'), 'user')
             );
 
         /* Ne zaman eklendiği */
         text.appendChild(
-            cardRow(CARD_ICONS.clock, timeAgo(createdMillis(data)))
+            cardRow(CARD_ICONS.clock, timeAgo(createdMillis(data)), 'clock')
         );
 
         /* Tek satırda: yorum, beğeni ve beğenmeme sayıları (şimdilik çalışmaz) */
@@ -6501,13 +6512,13 @@ function renderCards(container, items, mine, emptyText) {
         stats.className = 'home-card-stats';
 
         [
-            [CARD_ICONS.comment, fakeCount(item.id, 'yorum') + ' yorum'],
-            [CARD_ICONS.like, fakeCount(item.id, 'begeni')],
-            [CARD_ICONS.dislike, fakeCount(item.id, 'begenmeme')]
-        ].forEach(([icon, value]) => {
+            [CARD_ICONS.comment, fakeCount(item.id, 'yorum') + ' yorum', 'comment'],
+            [CARD_ICONS.like, fakeCount(item.id, 'begeni'), 'like'],
+            [CARD_ICONS.dislike, fakeCount(item.id, 'begenmeme'), 'dislike']
+        ].forEach(([icon, value, kind]) => {
 
             const stat = document.createElement('span');
-            stat.className = 'home-card-stat';
+            stat.className = 'home-card-stat ' + kind;
             stat.innerHTML = icon;
             stat.appendChild(document.createTextNode(String(value)));
 
