@@ -832,7 +832,7 @@ body[data-tab="map"] .ac-kapa svg {
     border-radius: 10px;
     background: white;
     font-size: inherit;
-    font-weight: bold;
+    font-weight: 800;
     color: #444;
     white-space: nowrap;
 }
@@ -1124,11 +1124,7 @@ body[data-tab="map"] .ac-kapa svg {
 
 /* Ana sayfadaki kartta */
 .home-card .no-image {
-    flex: none;
-    width: 88px;
-    height: 56px;
-    border-radius: 8px;
-    font-size: 10px;
+    font-size: 11px;
     gap: .2em;
 }
 
@@ -1148,47 +1144,173 @@ body[data-tab="map"] .ac-kapa svg {
     font-size: 16px;
 }
 
+/*
+ * İNŞAAT KARTI (ana sayfadaki listeler)
+ * Solda resim; sağda tür başlığı, zil ve simgeli satırlar:
+ * konum, ekleyen, ne zaman eklendiği + yorum sayısı.
+ */
 .home-card {
+    position: relative;
     display: flex;
     flex: none;
     width: 100%;
-    gap: 12px;
-    align-items: center;
-    padding: 10px;
-    margin-bottom: 10px;
+    gap: .9em;
+    align-items: stretch;
+
+    /* Solda daha az boşluk: resim kartın kenarına yakın durur. */
+    padding: .7em .7em .7em .45em;
+    margin-bottom: .75em;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    border-radius: 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.10);
     text-align: left;
+    /*
+     * Telefonun kendi yazı tipi kullanılır (hiçbir şey indirilmez):
+     * Android'de Roboto, iPhone'da San Francisco, Windows'ta Segoe UI.
+     */
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
     font-weight: normal;
     color: #222;
 }
 
-.home-card img {
+/* Resim alanı: resim (ya da "Resim yok") ve sol altta resim sayısı */
+.home-card-media {
+    position: relative;
     flex: none;
-    width: 88px;
-    height: 56px;
-    object-fit: cover;
-    border-radius: 8px;
+
+    /* Genişlik sabit; boyu kartın yazı alanı kadar (yukarıdan aşağıya). */
+    align-self: stretch;
+    margin: .15em 0;
+    width: 30%;
+    min-height: 6em;
+    border-radius: 12px;
+    overflow: hidden;
     background: #eee;
 }
 
-.home-card-text {
-    min-width: 0;
+.home-card-media img,
+.home-card-media .no-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.home-card-title {
-    font-size: 15px;
+.home-card-media img {
+    display: block;
+}
+
+/* Sol alttaki koyu kutu: resim simgesi + kaç resim olduğu */
+.home-card-count {
+    position: absolute;
+    left: .35em;
+    bottom: .35em;
+    display: flex;
+    align-items: center;
+    gap: .3em;
+    padding: .2em .45em;
+    border-radius: .45em;
+    background: rgba(0, 0, 0, .62);
+    color: white;
+    font-size: .8em;
     font-weight: bold;
+    line-height: 1;
+}
+
+.home-card-count svg {
+    width: 1.15em;
+    height: 1.15em;
+}
+
+.home-card-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .1em;
+}
+
+/* Başlık: tür ikonu + adı; sağında zil için boşluk bırakılır */
+.home-card-title {
+    display: flex;
+    align-items: center;
+    gap: .35em;
+    padding-right: 1.8em;
+    margin-bottom: .05em;
+    font-size: 1.13em;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: #1d2340;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.home-card-title span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Zil: şimdilik sadece görünür, bir işe yaramaz. */
+.home-card-bell {
+    position: absolute;
+    top: .7em;
+    right: .7em;
+    width: 1.5em;
+    height: 1.5em;
+    color: #3a3f4f;
+    pointer-events: none;
+}
+
+/* Simgeli satırlar */
+.home-card-row {
+    display: flex;
+    align-items: center;
+    gap: .45em;
+    min-width: 0;
+    font-size: .857em;
+    font-weight: 600;
+    color: #555a66;
+}
+
+.home-card-row svg {
+    flex: none;
+    width: 1.15em;
+    height: 1.15em;
+    color: #555a66;
+}
+
+.home-card-row > span {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.home-card-sub {
-    font-size: 13px;
-    color: #666;
-    margin-top: 3px;
+/* En alttaki satır: yorum, beğeni, beğenmeme sayıları (üstünde ince ayraç) */
+.home-card-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.1em;
+    margin-top: .3em;
+    padding-top: .4em;
+    border-top: 1px solid #e6e8ee;
+    font-size: .857em;
+    font-weight: 600;
+    color: #555a66;
+    white-space: nowrap;
+}
+
+.home-card-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: .35em;
+}
+
+.home-card-stat svg {
+    width: 1.15em;
+    height: 1.15em;
 }
 
 .home-empty {
@@ -6178,6 +6300,105 @@ function settleHomeTrack() {
     }, 320);
 }
 
+/* Karttaki simgeler (çizgi çizim, yazı rengini alır) */
+const CARD_ICONS = {
+    pin:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/>' +
+        '<circle cx="12" cy="9.5" r="2.5"/></svg>',
+    user:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>',
+    clock:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    /* Konuşma balonu: içinde iki çizgi, kuyruğu sol altta */
+    comment:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M6 4h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-8l-4 3.5V18H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>' +
+        '<path d="M7.5 9h9"/><path d="M7.5 13h6"/></svg>',
+    /* Beğen: yukarı bakan başparmak */
+    like:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11z"/>' +
+        '<path d="M7 11l3.5-7a2 2 0 0 1 2.5 2.4L12.3 10H18a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 16.9 20H7"/></svg>',
+    /* Beğenme: aşağı bakan başparmak */
+    dislike:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<g transform="rotate(180 12 12)">' +
+        '<path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11z"/>' +
+        '<path d="M7 11l3.5-7a2 2 0 0 1 2.5 2.4L12.3 10H18a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 16.9 20H7"/></g></svg>',
+    /* Zil: yuvarlak gövde, düz alt kenar, altta tokmak */
+    bell:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 3v1.2"/>' +
+        '<path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5z"/>' +
+        '<path d="M9.8 18a2.2 2.2 0 0 0 4.4 0"/></svg>',
+    /* Resim: çerçeve, dağ ve güneş (resim sayısı kutusunda) */
+    image:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/>' +
+        '<circle cx="9" cy="9.5" r="1.6" fill="currentColor"/>' +
+        '<path d="M20.5 16l-5-5-8.5 8.5"/></svg>'
+};
+
+/* Simgeli bir kart satırı */
+function cardRow(icon, textValue) {
+
+    const row = document.createElement('div');
+    row.className = 'home-card-row';
+    row.innerHTML = icon;
+
+    const span = document.createElement('span');
+    span.textContent = textValue;
+    row.appendChild(span);
+
+    return row;
+}
+
+/* "az önce", "5 dakika önce", "3 saat önce", "1 gün önce", "2 ay önce"... */
+function timeAgo(millis) {
+
+    const seconds = Math.max(0, (Date.now() - millis) / 1000);
+
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1)  return 'az önce';
+    if (hours < 1)    return minutes + ' dakika önce';
+    if (days < 1)     return hours + ' saat önce';
+    if (days < 30)    return days + ' gün önce';
+    if (days < 365)   return Math.floor(days / 30) + ' ay önce';
+
+    return Math.floor(days / 365) + ' yıl önce';
+}
+
+/*
+ * !!! GEÇİCİ - SONRA KALDIRILACAK !!!
+ * Yorum, beğeni ve beğenmeme henüz yok. Karttaki sayılar şimdilik
+ * 1 ile 10 arasında rastgele sayılardır (her inşaat için hep aynı
+ * sayı çıksın diye kayıt kimliğinden üretilir). Bunlar eklenince
+ * gerçek sayılar kullanılacak ve bu işlev silinecek.
+ */
+function fakeCount(id, kind) {
+
+    let hash = 0;
+
+    for (const char of String(id) + kind)
+        hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+
+    return 1 + (hash % 10);
+}
+
 /* Verilen kutuya inşaat kartlarını çizer. */
 function renderCards(container, items, mine, emptyText) {
 
@@ -6206,7 +6427,6 @@ function renderCards(container, items, mine, emptyText) {
         const data = item.data;
         const type = placeType(data.type);
         const images = Array.isArray(data.images) ? data.images : [];
-        const typeText = type.icon + ' ' + type.label;
 
         const thumbURL =
             data.thumbURL || (images.length ? images[0].url : null);
@@ -6214,67 +6434,95 @@ function renderCards(container, items, mine, emptyText) {
         const card = document.createElement('button');
         card.className = 'home-card';
 
+        const media = document.createElement('div');
+        media.className = 'home-card-media';
+
         if (thumbURL) {
 
             const img = document.createElement('img');
             img.src = thumbURL;
             img.alt = '';
             img.loading = 'lazy';
-            card.appendChild(img);
+            media.appendChild(img);
 
         } else {
 
             /* Resimsiz kayıt: resmin yerinde "Resim yok" görseli */
-            card.appendChild(noImageBox());
+            media.appendChild(noImageBox());
         }
+
+        /* Sol altta kaç resim olduğu */
+        if (images.length) {
+
+            const count = document.createElement('div');
+            count.className = 'home-card-count';
+            count.innerHTML = CARD_ICONS.image;
+            count.appendChild(document.createTextNode(String(images.length)));
+
+            media.appendChild(count);
+        }
+
+        card.appendChild(media);
 
         const text = document.createElement('div');
         text.className = 'home-card-text';
 
+        /* Başlık: tür ikonu ve adı (kendi listesinde inşaatın adı varsa o) */
         const title = document.createElement('div');
         title.className = 'home-card-title';
 
-        const sub = document.createElement('div');
-        sub.className = 'home-card-sub';
+        const titleIcon = document.createElement('span');
+        titleIcon.textContent = type.icon;
 
-        if (mine) {
+        const titleText = document.createElement('span');
+        titleText.textContent = (mine && data.name) ? data.name : type.label;
 
-            /* Kendi listesinde: ad (varsa) + tür */
-            title.textContent = data.name || typeText;
-
-            const createdAt = data.createdAt;
-
-            const date =
-                (createdAt && typeof createdAt.toDate === 'function')
-                    ? createdAt.toDate().toLocaleDateString('tr-TR')
-                    : '';
-
-            sub.textContent =
-                [data.name ? typeText : '', date]
-                    .filter(Boolean)
-                    .join(' · ');
-
-        } else {
-
-            /* Herkese açık listede ad gösterilmez. */
-            title.textContent = typeText;
-
-            sub.textContent = 'Ekleyen: ' + (data.username || '-');
-        }
-
+        title.appendChild(titleIcon);
+        title.appendChild(titleText);
         text.appendChild(title);
 
-        /* Şehir ve ilçe ayrı satırda, alt satırın üstünde */
-        if (shortLocation(data)) {
-            const location = document.createElement('div');
-            location.className = 'home-card-sub';
-            location.textContent = shortLocation(data);
-            text.appendChild(location);
-        }
+        /* Konum: "İlçe, Şehir" */
+        if (shortLocation(data))
+            text.appendChild(cardRow(CARD_ICONS.pin, shortLocation(data)));
 
-        if (sub.textContent)
-            text.appendChild(sub);
+        /* Ekleyen (kendi listesinde gerek yok) */
+        if (!mine)
+            text.appendChild(
+                cardRow(CARD_ICONS.user, 'Ekleyen: ' + (data.username || '-'))
+            );
+
+        /* Ne zaman eklendiği */
+        text.appendChild(
+            cardRow(CARD_ICONS.clock, timeAgo(createdMillis(data)))
+        );
+
+        /* Tek satırda: yorum, beğeni ve beğenmeme sayıları (şimdilik çalışmaz) */
+        const stats = document.createElement('div');
+        stats.className = 'home-card-stats';
+
+        [
+            [CARD_ICONS.comment, fakeCount(item.id, 'yorum') + ' yorum'],
+            [CARD_ICONS.like, fakeCount(item.id, 'begeni')],
+            [CARD_ICONS.dislike, fakeCount(item.id, 'begenmeme')]
+        ].forEach(([icon, value]) => {
+
+            const stat = document.createElement('span');
+            stat.className = 'home-card-stat';
+            stat.innerHTML = icon;
+            stat.appendChild(document.createTextNode(String(value)));
+
+            stats.appendChild(stat);
+        });
+
+        text.appendChild(stats);
+
         card.appendChild(text);
+
+        /* Zil (şimdilik çalışmaz) */
+        const bell = document.createElement('span');
+        bell.className = 'home-card-bell';
+        bell.innerHTML = CARD_ICONS.bell;
+        card.appendChild(bell);
 
         card.addEventListener('click', () => {
             openDetail(item.id);
