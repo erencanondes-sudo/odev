@@ -1057,25 +1057,25 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 #filterCount {
-    display: block;
-    margin-top: 10px;
+    min-width: 0;
+    padding-left: .6em;
     font-size: 13px;
     color: #666;
-}
-
-#filterCount:empty {
-    display: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /*
- * Üç düğme satırı eşit paylaşır: genişlikleri hep aynıdır
- * ve ekran genişliğiyle birlikte orantılı değişir.
+ * Satır üçe bölünür: solda sonuç yazısı, sağda iki düğme.
+ * Düğmelerin genişliği aynıdır ve ekranla orantılı değişir.
  */
 .filter-buttons {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    align-items: center;
     gap: 8px;
-    margin-top: 10px;
+    margin-top: 18px;
 }
 
 .filter-buttons button {
@@ -1093,10 +1093,6 @@ body[data-tab="map"] .ac-kapa svg {
 
 #filterClearBtn {
     background: #1a73e8;
-}
-
-#filterCloseBtn {
-    background: #d93025;
 }
 
 /*
@@ -1158,7 +1154,7 @@ body[data-tab="map"] .ac-kapa svg {
     align-items: stretch;
 
     /* Solda daha az boşluk: resim kartın kenarına yakın durur. */
-    padding: .7em .7em .7em .45em;
+    padding: .7em .7em .7em .6em;
     margin-bottom: .75em;
     background: white;
     border-radius: 16px;
@@ -1228,7 +1224,7 @@ body[data-tab="map"] .ac-kapa svg {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: .1em;
+    gap: .15em;
 }
 
 /* Başlık: tür ikonu + adı; sağında zil için boşluk bırakılır */
@@ -1237,7 +1233,7 @@ body[data-tab="map"] .ac-kapa svg {
     align-items: center;
     gap: .35em;
     padding-right: 1.8em;
-    margin-bottom: .3em;
+    margin-bottom: calc(.3em - 1px);
     font-size: 1.13em;
     font-weight: 800;
     letter-spacing: -.01em;
@@ -1289,7 +1285,6 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 /* Simge renkleri */
-.home-card .pin svg      { color: #8b5cf6; }
 .home-card .like svg     { color: #16a34a; }
 .home-card .dislike svg  { color: #dc2626; }
 
@@ -1298,8 +1293,8 @@ body[data-tab="map"] .ac-kapa svg {
     display: flex;
     align-items: center;
     gap: 1.1em;
-    margin-top: .3em;
-    padding-top: .4em;
+    margin-top: .35em;
+    padding-top: .5em;
     border-top: 1px solid #e6e8ee;
     font-size: .857em;
     font-weight: 600;
@@ -1315,11 +1310,24 @@ body[data-tab="map"] .ac-kapa svg {
 
 /* Yorum ile beğeni arası biraz, beğeni ile beğenmeme arası çok az daha açık */
 .home-card-stat.comment {
-    margin-right: .6em;
+    margin-right: 1.1em;
+}
+
+/* Yorum ikonu çok az büyük (yazı aynı kalır) */
+.home-card-stat.comment svg {
+    width: 1.25em;
+    height: 1.25em;
 }
 
 .home-card-stat.like {
     margin-right: .25em;
+}
+
+/* Beğeni ve beğenmeme ikonları biraz daha büyük */
+.home-card-stat.like svg,
+.home-card-stat.dislike svg {
+    width: 1.4em;
+    height: 1.4em;
 }
 
 .home-card-stat svg {
@@ -1583,16 +1591,12 @@ body[data-tab="map"] .ac-kapa svg {
                     <span class="field-label">Eklenme tarihi</span>
                     <select id="filterAdded"></select>
                 </label>
-                <label>
-                    <span class="field-label">Bitiş yılı</span>
-                    <select id="filterEnd"></select>
-                </label>
             </div>
-            <span id="filterCount"></span>
+            <!-- Solda sonuç ("3 inşaat"), sağda Uygula ve Temizle -->
             <div class="filter-buttons">
+                <span id="filterCount"></span>
                 <button id="filterApplyBtn">Uygula</button>
                 <button id="filterClearBtn">Temizle</button>
-                <button id="filterCloseBtn">Kapat</button>
             </div>
         </div>
 
@@ -4933,7 +4937,7 @@ document.getElementById('loginCancelBtn').addEventListener(
    kapatılınca kayıt kendimiz geri alınır.
 ================================================= */
 
-/* Açık katmanlar, açılış sırasıyla: 'homeFilter', 'map', 'popup', 'mapFilter', 'multi', 'homeMenu', 'detail', 'panel', 'login' */
+/* Açık katmanlar, açılış sırasıyla: 'homeFilter', 'filterResults', 'map', 'popup', 'mapFilter', 'multi', 'homeMenu', 'detail', 'panel', 'login' */
 const openLayers = [];
 
 /* Kendi yaptığımız, henüz tamamlanmamış geri alma işlemleri */
@@ -4951,6 +4955,7 @@ const LAYER_HIDERS = {
     mapFilter: hideMapFilter,
     popup: () => placePopup.remove(),
     homeFilter: leaveHomeFilter,
+    filterResults: clearFilter,
     multi: hideMultis,
     homeMenu: hideHomeMenu,
     detail: hideDetail,
@@ -5382,7 +5387,6 @@ const filterCity = document.getElementById('filterCity');
 const filterDistrict = document.getElementById('filterDistrict');
 const filterType = document.getElementById('filterType');
 const filterAdded = document.getElementById('filterAdded');
-const filterEnd = document.getElementById('filterEnd');
 
 let homeMode = 'latest';
 
@@ -5393,10 +5397,12 @@ function setHomeMode(mode) {
     document.getElementById('homeMain').scrollTop = 0;
 
     /* "Filtrele" açıkken geri tuşu "Son eklenenler"e döner. */
-    if (mode === 'filter')
+    if (mode === 'filter') {
         layerOpened('homeFilter');
-    else
+    } else {
+        layerClosed('filterResults');
         layerClosed('homeFilter');
+    }
 }
 
 /* Geri tuşuyla filtreden çıkılırken kullanılır. */
@@ -5818,22 +5824,11 @@ document.addEventListener(
     true
 );
 
-function sortedUnique(values) {
-
-    return Array.from(new Set(values.filter(Boolean)))
-        .sort((a, b) => a.localeCompare(b, 'tr'))
-        .map(value => ({ value: value, label: value }));
-}
-
 /*
  * Şehir listesinde 81 ilin hepsi, ilçe listesinde seçilen şehrin
- * bütün ilçeleri görünür. Bitiş yılı seçenekleri kayıtlardan çıkarılır.
+ * bütün ilçeleri görünür.
  */
 function refreshFilterOptions() {
-
-    const all = [];
-
-    places.forEach(place => all.push(place.data));
 
     fillSelect(
         filterCity,
@@ -5854,18 +5849,6 @@ function refreshFilterOptions() {
             filterCity.value ? 'Tüm ilçeler' : 'Önce şehir seç'
         );
     }
-
-    fillSelect(
-        filterEnd,
-        'Hepsi',
-        sortedUnique(
-            all.map(data =>
-                typeof data.endDate === 'string'
-                    ? data.endDate.slice(0, 4)
-                    : ''
-            )
-        )
-    );
 }
 
 typeMulti.setOptions(
@@ -5890,8 +5873,7 @@ fillSelect(filterAdded, 'Hepsi', [
  */
 const FILTER_SELECTS = {
     city: filterCity,
-    added: filterAdded,
-    end: filterEnd
+    added: filterAdded
 };
 
 /* İlçe ve tür çoklu seçimdir: uygulanmış değerleri liste olarak tutulur. */
@@ -5904,8 +5886,7 @@ const appliedFilter = {
     city: '',
     district: [],
     type: [],
-    added: '',
-    end: ''
+    added: ''
 };
 
 function matchesFilter(data) {
@@ -5936,16 +5917,6 @@ function matchesFilter(data) {
 
         if (createdMillis(data) < limit)
             return false;
-    }
-
-    if (appliedFilter.end) {
-
-        if (
-            typeof data.endDate !== 'string' ||
-            data.endDate.slice(0, 4) !== appliedFilter.end
-        ) {
-            return false;
-        }
     }
 
     return true;
@@ -6028,6 +5999,9 @@ function onFilterChange() {
 
     /* Eski sonuç listesi de kalkar; yeniden "Uygula" gerekir. */
     renderFilterList();
+
+    /* Liste kalktı; geri tuşu artık temizlemez, filtreden çıkar. */
+    layerClosed('filterResults');
 }
 
 /* "Uygula": seçimler listeye ve haritaya uygulanır. */
@@ -6047,6 +6021,13 @@ function applyFilter() {
 
     renderHomeList();
     updateMapFilter();
+
+    /*
+     * Ana sayfada sonuç listelendiyse geri tuşu önce Temizle
+     * görevi görür, ikinci basışta filtreden çıkılır.
+     */
+    if (filterBox.parentElement !== mapFilterSlot)
+        layerOpened('filterResults');
 }
 
 document.getElementById('filterApplyBtn').addEventListener(
@@ -6054,7 +6035,7 @@ document.getElementById('filterApplyBtn').addEventListener(
     applyFilter
 );
 
-[filterCity, filterAdded, filterEnd]
+[filterCity, filterAdded]
     .forEach(select => {
         select.addEventListener('change', onFilterChange);
     });
@@ -6116,6 +6097,12 @@ document.addEventListener(
 
 /* "Temizle": seçimler ve uygulanmış filtre birlikte sıfırlanır. */
 filterClearBtn.addEventListener('click', () => {
+    clearFilter();
+    layerClosed('filterResults');
+});
+
+/* Geri tuşuyla da çağrılır (sonuç listesi varken geri = Temizle). */
+function clearFilter() {
 
     Object.keys(FILTER_SELECTS).forEach(key => {
         FILTER_SELECTS[key].value = '';
@@ -6134,18 +6121,7 @@ filterClearBtn.addEventListener('click', () => {
     refreshFilterOptions();
     renderHomeList();
     updateMapFilter();
-});
-
-/* "Kapat": filtre kutusunu kapatır. */
-document.getElementById('filterCloseBtn').addEventListener('click', () => {
-
-    closeMultis();
-
-    if (filterBox.parentElement === mapFilterSlot)
-        closeMapFilter();
-    else
-        setHomeMode('latest');
-});
+}
 
 /* "İlçe, Şehir" */
 function shortLocation(data) {
@@ -6316,11 +6292,11 @@ function settleHomeTrack() {
 
 /* Karttaki simgeler (çizgi çizim, yazı rengini alır) */
 const CARD_ICONS = {
+    /* Konum: damla biçimli yeşil işaret, içinde beyaz nokta */
     pin:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" fill="currentColor"/>' +
-        '<circle cx="12" cy="9.5" r="2.5" fill="#fff"/></svg>',
+        '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#2fa84f"/>' +
+        '<circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>',
     user:
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -6337,13 +6313,13 @@ const CARD_ICONS = {
         '<path d="M7.5 9h9"/><path d="M7.5 13h6"/></svg>',
     /* Beğen: yukarı bakan başparmak */
     like:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11z"/>' +
         '<path d="M7 11l3.5-7a2 2 0 0 1 2.5 2.4L12.3 10H18a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 16.9 20H7"/></svg>',
     /* Beğenme: aşağı bakan başparmak */
     dislike:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<g transform="rotate(180 12 12)">' +
         '<path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11z"/>' +
