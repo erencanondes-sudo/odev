@@ -784,7 +784,7 @@ body[data-tab="map"] .ac-kapa svg {
     object-fit: fill;
 
     /* Renkler soluklaştırılır; sayfa daha sakin görünsün. */
-    filter: saturate(.22);
+    filter: saturate(.6);
     margin-bottom: 12px;
     border-radius: 12px;
     background: #e3e5e9;
@@ -1259,6 +1259,12 @@ body[data-tab="map"] .ac-kapa svg {
     pointer-events: none;
 }
 
+/* Konum satırındaki şehir adı */
+.home-card-city {
+    font-weight: 800;
+    color: #2f3340;
+}
+
 /* Simgeli satırlar */
 .home-card-row {
     display: flex;
@@ -1294,7 +1300,7 @@ body[data-tab="map"] .ac-kapa svg {
     align-items: center;
     gap: 1.1em;
     margin-top: .35em;
-    padding-top: .5em;
+    padding-top: calc(.5em + 1px);
     border-top: 1px solid #e6e8ee;
     font-size: .857em;
     font-weight: 600;
@@ -1310,7 +1316,19 @@ body[data-tab="map"] .ac-kapa svg {
 
 /* Yorum ile beğeni arası biraz, beğeni ile beğenmeme arası çok az daha açık */
 .home-card-stat.comment {
-    margin-right: 1.1em;
+    position: relative;
+    padding-right: calc(1.5em + 1px);
+    margin-right: calc(.4em + 1px);
+}
+
+/* Yorum ile beğeni arasındaki dik ayraç */
+.home-card-stat.comment::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 15%;
+    height: 70%;
+    border-right: 1px solid #d9dce4;
 }
 
 /* Yorum ikonu çok az büyük (yazı aynı kalır) */
@@ -1320,7 +1338,7 @@ body[data-tab="map"] .ac-kapa svg {
 }
 
 .home-card-stat.like {
-    margin-right: .25em;
+    margin-right: calc(.25em + 3px);
 }
 
 /* Beğeni ve beğenmeme ikonları biraz daha büyük */
@@ -6295,7 +6313,7 @@ const CARD_ICONS = {
     /* Konum: damla biçimli yeşil işaret, içinde beyaz nokta */
     pin:
         '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-        '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#1f6ff2"/>' +
+        '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#5566f4"/>' +
         '<circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>',
     user:
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -6468,9 +6486,26 @@ function renderCards(container, items, mine, emptyText) {
         title.appendChild(titleText);
         text.appendChild(title);
 
-        /* Konum: "İlçe, Şehir" */
-        if (shortLocation(data))
-            text.appendChild(cardRow(CARD_ICONS.pin, shortLocation(data), 'pin'));
+        /* Konum: "İlçe, Şehir" (şehir biraz daha kalın) */
+        if (shortLocation(data)) {
+
+            const row = cardRow(CARD_ICONS.pin, '', 'pin');
+            const span = row.querySelector('span');
+
+            if (data.district)
+                span.appendChild(
+                    document.createTextNode(data.district + (data.city ? ', ' : ''))
+                );
+
+            if (data.city) {
+                const city = document.createElement('b');
+                city.className = 'home-card-city';
+                city.textContent = data.city;
+                span.appendChild(city);
+            }
+
+            text.appendChild(row);
+        }
 
         /* Ekleyen (kendi listesinde gerek yok) */
         if (!mine)
